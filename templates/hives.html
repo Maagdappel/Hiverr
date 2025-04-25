@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apiaries</title>
+    <title>Hives</title>
 </head>
 <body>
-    <h1>Apiaries</h1>
+    <h1>Hives</h1>
     <table>
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Location</th>
+                <th>Apiary</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for apiary in apiaries %}
+            {% for hive in hives %}
                 <tr>
-                    <td>{{ apiary.name }}</td>
-                    <td>{{ apiary.location }}</td>
+                    <td>{{ hive.name }}</td>
+                    <td>{{ hive.apiary.name }}</td>
                     <td>
-                        <a href="/edit-apiary/{{ apiary.id }}">Edit</a>
-                        <a href="/delete-apiary/{{ apiary.id }}" style="color:red;">Delete</a>
+                        <a href="/edit-hive/{{ hive.id }}">Edit</a>
+                        <a href="/delete-hive/{{ hive.id }}" style="color:red;">Delete</a>
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
-    <a href="/add-apiary">Add New Apiary</a>
+    <a href="/add-hive">Add New Hive</a>
 </body>
 </html>

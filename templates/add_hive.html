@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Hive</title>
+</head>
+<body>
+    <h1>Add New Hive</h1>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br>
+
+        <label for="apiary">Apiary:</label>
+        <select name="apiary_id">
+            {% for apiary in apiaries %}
+                <option value="{{ apiary.id }}">{{ apiary.name }}</option>
+            {% endfor %}
+        </select><br>
+        <button type="submit">Add Hive</button>
+    </form>
+    <a href="/hives">Back to Hives</a>
+</body>
+</html>

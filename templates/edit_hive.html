@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Hive</title>
+</head>
+<body>
+    <h1>Edit Hive</h1>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ hive.name }}" required><br>
+        
+        <label for="apiary">Apiary:</label>
+        <select name="apiary_id">
+            {% for apiary in apiaries %}
+                <option value="{{ apiary.id }}" {% if apiary.id == hive.apiary_id %}selected{% endif %}>
+                    {{ apiary.name }}
+                </option>
+            {% endfor %}
+        </select><br>
+        
+        <button type="submit">Update Hive</button>
+    </form>
+    <a href="/hives">Back to Hives</a>
+</body>
+</html>

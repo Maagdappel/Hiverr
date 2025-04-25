@@ -9,13 +9,10 @@
     <h1>Edit Apiary</h1>
     <form method="POST">
         <label for="name">Name:</label>
-        <input type="text" id="name" name="name" value="{{ apiary.name }}" required><br><br>
+        <input type="text" id="name" name="name" value="{{ apiary.name }}" required><br>
         
         <label for="location">Location:</label>
-        <input type="text" id="location" name="location" value="{{ apiary.location }}"><br><br>
-        
-        <label for="notes">Notes:</label>
-        <textarea id="notes" name="notes">{{ apiary.notes }}</textarea><br><br>
+        <input type="text" id="location" name="location" value="{{ apiary.location }}"><br>
         
         <button type="submit">Update Apiary</button>
     </form>

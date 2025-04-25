@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Queen</title>
+</head>
+<body>
+    <h1>Add New Queen</h1>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br>
+        
+        <label for="name">Breeder:</label>
+        <input type="text" id="breeder" name="breeder"><br>
+
+        <label for="name">Birth Date:</label>
+        <input type="date" id="birth_date" name="birth_date"><br>
+
+        <label for="hive">Hive:</label>
+        <select name="hive_id">
+            {% for hive in hives %}
+                <option value="{{ hive.id }}">{{ hive.name }}</option>
+            {% endfor %}
+        </select><br>
+        <button type="submit">Add Queen</button>
+    </form>
+    <a href="/queens">Back to Queens</a>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Queen</title>
+</head>
+<body>
+    <h1>Edit Queen</h1>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ queen.name }}" required><br>
+
+        <label for="name">Breeder:</label>
+        <input type="text" id="breeder" name="breeder" value="{{ queen.breeder }}"><br>
+
+        <label for="name">Birth Date:</label>
+        <input type="date" id="birth_date" name="birth_date" value="{{ queen.birth_date }}"><br>
+        
+        <label for="hive">Hive:</label>
+        <select name="hive_id">
+            {% for hive in hives %}
+                <option value="{{ hive.id }}" {% if hive.id == queen.hive_id %}selected{% endif %}>
+                    {{ hive.name }}
+                </option>
+            {% endfor %}
+        </select><br>
+        
+        <button type="submit">Update Queen</button>
+    </form>
+    <a href="/queens">Back to Queen</a>
+</body>
+</html>
