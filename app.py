@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+from flask import request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -10,17 +11,53 @@ db = SQLAlchemy(app)
 def index():
     return render_template('index.html')
 
-@app.route("/apiaries")
-def list_apiaries():
-    apiaries = Apiary.query.all()
-    return "<br>".join([f"{a.id}: {a.name} - {a.location}" for a in apiaries])
+@app.route('/apiaries')
+def apiaries():
+    apiaries = Apiary.query.all()  # Retrieve all apiaries from the database
+    return render_template('apiaries.html', apiaries=apiaries)
 
-@app.route("/add-apiary")
+@app.route('/edit-apiary/<int:id>', methods=['GET', 'POST'])
+def edit_apiary(id):
+    apiary = Apiary.query.get(id)  # Fetch the apiary by ID
+
+    if request.method == 'POST':
+        # Update the apiary with form data
+        apiary.name = request.form['name']
+        apiary.location = request.form['location']
+        apiary.notes = request.form['notes']
+        db.session.commit()  # Commit changes to the database
+
+        return redirect(url_for('apiaries'))  # Redirect to the apiaries list
+
+    return render_template('edit_apiary.html', apiary=apiary)
+
+@app.route('/delete-apiary/<int:id>', methods=['GET'])
+def delete_apiary(id):
+    apiary = Apiary.query.get(id)  # Fetch the apiary by ID
+    db.session.delete(apiary)  # Delete it from the session
+    db.session.commit()  # Commit the changes to the database
+    return redirect(url_for('apiaries'))  # Redirect back to the apiaries list
+
+
+@app.route('/add-apiary', methods=['GET', 'POST'])
 def add_apiary():
-    new = Apiary(name="Backyard Hive", location="Behind the shed", notes="Sunny spot")
-    db.session.add(new)
-    db.session.commit()
-    return "Apiary added!"
+    if request.method == 'POST':
+        # Get data from the form
+        name = request.form['name']
+        location = request.form['location']
+        notes = request.form['notes']
+
+        # Create a new Apiary object
+        new_apiary = Apiary(name=name, location=location, notes=notes)
+
+        # Add to the database
+        db.session.add(new_apiary)
+        db.session.commit()
+
+        # Redirect to the apiaries list
+        return redirect(url_for('apiaries'))
+
+    return render_template('add_apiary.html')
 
 
 class Apiary(db.Model):
