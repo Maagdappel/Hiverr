@@ -1,4 +1,74 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Queens - Hiverr{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Queens</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Breeder</th>
+                    <th>Birth Date</th>
+                    <th>Hive</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for queen in queens %}
+                <tr>
+                    <td>{{ queen.name }}</td>
+                    <td>{{ queen.breeder }}</td>
+                    <td>{{ queen.birth_date }}</td>
+                    <td>{{ queen.hive.name if queen.hive else 'Unassigned' }}</td>
+                    <td>
+                        <a href="/edit-queen/{{ queen.id }}" class="btn btn-sm btn-primary">Edit</a>
+                        <button class="btn btn-sm btn-danger" onclick="confirmDelete('{{ queen.id }}', '{{ queen.name }}')">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/add-queen" class="btn btn-success mt-3">Add New Queen</a>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete <strong id="queenName"></strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDelete(queenId, queenName) {
+    // Set the name in the modal
+    document.getElementById('queenName').textContent = queenName;
+    // Set the delete link
+    document.getElementById('confirmDeleteBtn').href = '/delete-queen/' + queenId;
+    // Show the modal
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}
+
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34,4 +104,4 @@
     </table>
     <a href="/add-queen">Add New Queen</a>
 </body>
-</html>
+</html> -->

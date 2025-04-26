@@ -1,33 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apiaries</title>
-</head>
-<body>
-    <h1>Apiaries</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for apiary in apiaries %}
+{% extends "base.html" %}
+
+{% block title %}Apiaries - Hiverr{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Apiaries</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for apiary in apiaries %}
                 <tr>
                     <td>{{ apiary.name }}</td>
                     <td>{{ apiary.location }}</td>
                     <td>
-                        <a href="/edit-apiary/{{ apiary.id }}">Edit</a>
-                        <a href="/delete-apiary/{{ apiary.id }}" style="color:red;">Delete</a>
+                        <a href="/edit-apiary/{{ apiary.id }}" class="btn btn-sm btn-primary">Edit</a>
+                        <button class="btn btn-sm btn-danger" onclick="confirmDelete('{{ apiary.id }}', '{{ apiary.name }}')">Delete</button>
                     </td>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <a href="/add-apiary">Add New Apiary</a>
-</body>
-</html>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/add-apiary" class="btn btn-success mt-3">Add New Apiary</a>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete <strong id="itemName"></strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDelete(itemId, itemName) {
+    document.getElementById('itemName').textContent = itemName;
+    document.getElementById('confirmDeleteBtn').href = '/delete-apiary/' + itemId;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

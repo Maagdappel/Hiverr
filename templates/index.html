@@ -1,5 +1,11 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Home - Hiverr{% endblock %}
 
 {% block content %}
-  <p>Welcome to your beekeeping dashboard!</p>
+<h1 class="mb-5">Dashboard</h1>
+
+<a href="/apiaries" class="btn btn-primary">Manage Apiaries</a>
+<a href="/hives" class="btn btn-primary">Manage Hives</a>
+<a href="/queens" class="btn btn-primary">Manage Queens</a>
 {% endblock %}

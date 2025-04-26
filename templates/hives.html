@@ -1,33 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hives</title>
-</head>
-<body>
-    <h1>Hives</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Apiary</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for hive in hives %}
+{% extends "base.html" %}
+
+{% block title %}Hives - Hiverr{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Hives</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Apiary</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hive in hives %}
                 <tr>
                     <td>{{ hive.name }}</td>
                     <td>{{ hive.apiary.name }}</td>
                     <td>
-                        <a href="/edit-hive/{{ hive.id }}">Edit</a>
-                        <a href="/delete-hive/{{ hive.id }}" style="color:red;">Delete</a>
+                        <a href="/edit-hive/{{ hive.id }}" class="btn btn-sm btn-primary">Edit</a>
+                        <button class="btn btn-sm btn-danger" onclick="confirmDelete('{{ hive.id }}', '{{ hive.name }}')">Delete</button>
                     </td>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <a href="/add-hive">Add New Hive</a>
-</body>
-</html>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/add-hive" class="btn btn-success mt-3">Add New Hive</a>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete <strong id="itemName"></strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDelete(itemId, itemName) {
+    document.getElementById('itemName').textContent = itemName;
+    document.getElementById('confirmDeleteBtn').href = '/delete-hive/' + itemId;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

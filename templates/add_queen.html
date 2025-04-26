@@ -1,30 +1,60 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Queen</title>
-</head>
-<body>
-    <h1>Add New Queen</h1>
-    <form method="POST">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required><br>
-        
-        <label for="name">Breeder:</label>
-        <input type="text" id="breeder" name="breeder"><br>
+{% extends "base.html" %}
 
-        <label for="name">Birth Date:</label>
-        <input type="date" id="birth_date" name="birth_date"><br>
+{% block title %}Add Queen - Hiverr{% endblock %}
 
-        <label for="hive">Hive:</label>
-        <select name="hive_id">
-            {% for hive in hives %}
-                <option value="{{ hive.id }}">{{ hive.name }}</option>
-            {% endfor %}
-        </select><br>
-        <button type="submit">Add Queen</button>
-    </form>
-    <a href="/queens">Back to Queens</a>
-</body>
-</html>
+{% block content %}
+<h1 class="mb-4">Add New Queen</h1>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+{% if hives %}
+<form method="POST" class="row g-3">
+  <div class="col-md-6">
+    <label for="name" class="form-label">Name</label>
+    <input type="text" id="name" name="name" class="form-control" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="breeder" class="form-label">Breeder</label>
+    <input type="text" id="breeder" name="breeder" class="form-control">
+  </div>
+
+  <div class="col-md-6">
+    <label for="birth_date" class="form-label">Birth Date</label>
+    <input type="date" id="birth_date" name="birth_date" class="form-control" required>
+  </div>
+
+  <div class="col-md-6">
+    <label for="hive_id" class="form-label">Hive</label>
+    <select name="hive_id" id="hive_id" class="form-select" required>
+      {% for hive in hives %}
+        <option value="{{ hive.id }}" {% if queen and hive.id == queen.hive_id %}selected{% endif %}>
+          {{ hive.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-12">
+    <button type="submit" class="btn btn-success">Add Queen</button>
+    <a href="/queens" class="btn btn-secondary">Back to Queens</a>
+  </div>
+</form>
+{% else %}
+  <div class="alert alert-warning">
+    <strong>No available hives.</strong> Please create or free up a hive before assigning a queen.
+  </div>
+  <a href="/hives" class="btn btn-primary">Create Hive</a>
+  <a href="/queens" class="btn btn-secondary">Back to Queens</a>
+{% endif %}
+{% endblock %}

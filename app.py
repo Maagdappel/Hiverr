@@ -1,9 +1,11 @@
 from flask import Flask, render_template
-from flask import request, redirect, url_for
+from flask import request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import os
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hiverr.db'
 db = SQLAlchemy(app)
 
@@ -25,6 +27,7 @@ def edit_apiary(id):
         apiary.name = request.form['name']
         apiary.location = request.form['location']
         db.session.commit()  # Commit changes to the database
+        flash(f"Apiary: {apiary.name} edited successfully!", "success")
 
         return redirect(url_for('apiaries'))  # Redirect to the apiaries list
 
@@ -35,6 +38,7 @@ def delete_apiary(id):
     apiary = Apiary.query.get(id)  # Fetch the apiary by ID
     db.session.delete(apiary)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
+    flash(f"Apiary: {apiary.name} deleted successfully!", "success")
     return redirect(url_for('apiaries'))  # Redirect back to the apiaries list
 
 
@@ -51,6 +55,7 @@ def add_apiary():
         # Add to the database
         db.session.add(new_apiary)
         db.session.commit()
+        flash(f"Apiary: {new_apiary.name} added successfully!", "success")
 
         # Redirect to the apiaries list
         return redirect(url_for('apiaries'))
@@ -64,7 +69,11 @@ def hives():
 
 @app.route('/add-hive', methods=['GET', 'POST'])
 def add_hive():
+    apiaries = Apiary.query.all()
     if request.method == 'POST':
+        if not apiaries:
+            flash("You must create an apiary first before adding a hive.", "danger")
+            return redirect(url_for('apiaries'))
         # Get data from the form
         name = request.form['name']
         apiary_id = request.form['apiary_id']
@@ -75,11 +84,11 @@ def add_hive():
         # Add to the database
         db.session.add(new_hive)
         db.session.commit()
+        flash(f"Hive: {new_hive.name} added successfully!", "success")
 
         # Redirect to the hives list
         return redirect(url_for('hives'))
 
-    apiaries = Apiary.query.all()
     return render_template('add_hive.html', apiaries=apiaries)
 
 @app.route('/edit-hive/<int:id>', methods=['GET', 'POST'])
@@ -92,6 +101,7 @@ def edit_hive(id):
         hive.name = request.form['name']
         hive.apiary_id = request.form['apiary_id']
         db.session.commit()  # Commit changes to the database
+        flash(f"Hive: {hive.name} edited successfully!", "success")
 
         return redirect(url_for('hives'))  # Redirect to the apiaries list
 
@@ -102,6 +112,7 @@ def delete_hive(id):
     hive = Hive.query.get(id)  # Fetch the hive by ID
     db.session.delete(hive)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
+    flash(f"Hive: {hive.name} deleted successfully!", "success")
     return redirect(url_for('hives'))  # Redirect back to the hives list
 
 @app.route('/queens')
@@ -111,12 +122,20 @@ def queens():
 
 @app.route('/add-queen', methods=['GET', 'POST'])
 def add_queen():
+    hives = [hive for hive in Hive.query.all() if not hive.queens]
     if request.method == 'POST':
+        if not hives:
+            flash("You must create a hive first before adding a queen.", "danger")
+            return redirect(url_for('hives'))
         # Get data from the form
         name = request.form['name']
         breeder = request.form['breeder']
         birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
-        hive_id = request.form['hive_id']
+        #hive_id = request.form['hive_id']
+        hive_id = request.form.get('hive_id')
+        if not hive_id:
+            flash("You must assign the queen to a hive.", "error")
+            return redirect(request.url)  # or re-render the template with current data
 
         # Create a new Queen object
         new_queen = Queen(name=name, breeder=breeder, birth_date=birth_date, hive_id=hive_id)
@@ -124,25 +143,46 @@ def add_queen():
         # Add to the database
         db.session.add(new_queen)
         db.session.commit()
+        flash(f"Queen: {new_queen.name} added successfully!", "success")
 
         # Redirect to the hives list
         return redirect(url_for('queens'))
 
-    hives = Hive.query.all()
+    
     return render_template('add_queen.html', hives=hives)
 
 @app.route('/edit-queen/<int:id>', methods=['GET', 'POST'])
 def edit_queen(id):
     queen = Queen.query.get(id)  # Fetch the Queen by ID
-    hives = Hive.query.all() # Get all hives
+
+    # Find hives where no queen is currently assigned
+    hives = Hive.query.filter(Hive.queens == None).all()  # This checks if there are no queens in the hive
 
     if request.method == 'POST':
-        # Update the queen with form data
+        # Update queen details from form
         queen.name = request.form['name']
-        queen.hive_id = request.form['hive_id']
-        db.session.commit()  # Commit changes to the database
+        queen.breeder = request.form['breeder']
+        queen.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
 
-        return redirect(url_for('queens'))  # Redirect to the apiaries list
+        # Handle hive assignment (or keep the current hive if no new hive selected)
+        hive_id = request.form.get('hive_id')
+
+        # If a new hive is selected and it's different, assign it to the queen
+        if hive_id:
+            queen.hive_id = hive_id
+        elif not hive_id and queen.hive_id is not None:
+            # If no hive is selected and the queen already has a hive, keep the current hive
+            pass
+        else:
+            # If no hive is selected and the queen doesn't have a hive, assign her to "No Hive"
+            queen.hive_id = None
+
+        # Commit changes to the database
+        db.session.commit()
+        flash(f"Queen: {queen.name} edited successfully!", "success")
+
+        # Redirect to queens list
+        return redirect(url_for('queens'))
 
     return render_template('edit_queen.html', queen=queen, hives=hives)
 
@@ -151,6 +191,7 @@ def delete_queen(id):
     queen = Queen.query.get(id)  # Fetch the queen by ID
     db.session.delete(queen)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
+    flash(f"Queen: {queen.name} deleted successfully!", "success")
     return redirect(url_for('queens'))  # Redirect back to the queens list
 
 class Apiary(db.Model):
