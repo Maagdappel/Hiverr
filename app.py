@@ -11,12 +11,12 @@ db = SQLAlchemy(app)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', active_page='dashboard')
 
 @app.route('/apiaries')
 def apiaries():
     apiaries = Apiary.query.all()  # Retrieve all apiaries from the database
-    return render_template('apiaries.html', apiaries=apiaries)
+    return render_template('apiaries.html', apiaries=apiaries, active_page='apiaries')
 
 @app.route('/edit-apiary/<int:id>', methods=['GET', 'POST'])
 def edit_apiary(id):
@@ -65,7 +65,7 @@ def add_apiary():
 @app.route('/hives')
 def hives():
     hives = Hive.query.all()  # Retrieve all Hives from the database
-    return render_template('hives.html', hives=hives)
+    return render_template('hives.html', hives=hives, active_page='hives')
 
 @app.route('/add-hive', methods=['GET', 'POST'])
 def add_hive():
@@ -118,7 +118,7 @@ def delete_hive(id):
 @app.route('/queens')
 def queens():
     queens = Queen.query.all()  # Retrieve all Hives from the database
-    return render_template('queens.html', queens=queens)
+    return render_template('queens.html', queens=queens, active_page='queens')
 
 @app.route('/add-queen', methods=['GET', 'POST'])
 def add_queen():
