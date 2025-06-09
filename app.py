@@ -155,8 +155,10 @@ def add_queen():
 def edit_queen(id):
     queen = Queen.query.get(id)  # Fetch the Queen by ID
 
-    # Find hives where no queen is currently assigned
-    hives = Hive.query.filter(Hive.queens == None).all()  # This checks if there are no queens in the hive
+    # Find hives where no queen is currently assigned, include the current hive
+    hives = Hive.query.filter(~Hive.queens.any()).all()
+    if queen.hive and queen.hive not in hives:
+        hives.append(queen.hive)
 
     if request.method == 'POST':
         # Update queen details from form
