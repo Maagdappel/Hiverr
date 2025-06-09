@@ -117,7 +117,7 @@ def delete_hive(id):
 
 @app.route('/queens')
 def queens():
-    queens = Queen.query.all()  # Retrieve all Hives from the database
+    queens = Queen.query.all()  # Retrieve all queens from the database
     return render_template('queens.html', queens=queens, active_page='queens')
 
 @app.route('/add-queen', methods=['GET', 'POST'])
