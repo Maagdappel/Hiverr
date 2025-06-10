@@ -363,7 +363,8 @@ def settings():
     user = db.session.get(User, session['user_id'])
     tz_list = sorted(available_timezones())
     if not user.timezone:
-        user.timezone = datetime.now().astimezone().tzinfo.key
+        tzinfo = datetime.now().astimezone().tzinfo
+        user.timezone = getattr(tzinfo, 'key', tzinfo.tzname(None) or 'UTC')
         db.session.commit()
     if request.method == 'POST':
         section = request.form.get('section')
