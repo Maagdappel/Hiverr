@@ -12,6 +12,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Location</th>
+                    <th>Hives</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -20,6 +21,9 @@
                 <tr>
                     <td>{{ apiary.name }}</td>
                     <td>{{ apiary.location }}</td>
+                    <td>
+                        {{ apiary.hives | map(attribute='name') | join(', ') if apiary.hives else 'None' }}
+                    </td>
                     <td class="d-flex gap-1">
                         <a href="/edit-apiary/{{ apiary.id }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="mdi mdi-pencil"></i></a>
                         <a href="/add-hive" class="btn btn-sm btn-outline-success" title="Add Hive"><i class="mdi mdi-beehive-outline"></i></a>

@@ -12,6 +12,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Apiary</th>
+                    <th>Queen</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -20,6 +21,9 @@
                 <tr>
                     <td>{{ hive.name }}</td>
                     <td>{{ hive.apiary.name }}</td>
+                    <td>
+                        {{ hive.queens[0].name if hive.queens else 'Unassigned' }}
+                    </td>
                     <td class="d-flex gap-1">
                         <a href="/edit-hive/{{ hive.id }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="mdi mdi-pencil"></i></a>
                         <a href="/add-queen" class="btn btn-sm btn-outline-success" title="Add Queen"><i class="mdi mdi-crown"></i></a>
