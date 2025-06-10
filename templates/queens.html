@@ -3,11 +3,11 @@
 {% block title %}Queens - Hiverr{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Queens</h1>
+<h1 class="mb-4"><i class="mdi mdi-crown me-1"></i> Queens</h1>
 
 <div class="card shadow-sm">
     <div class="card-body">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover table-striped align-middle">
             <thead class="table-light">
                 <tr>
                     <th>Name</th>
@@ -24,9 +24,9 @@
                     <td>{{ queen.breeder }}</td>
                     <td>{{ queen.birth_date }}</td>
                     <td>{{ queen.hive.name if queen.hive else 'Unassigned' }}</td>
-                    <td>
-                        <a href="/edit-queen/{{ queen.id }}" class="btn btn-sm btn-primary">Edit</a>
-                        <button class="btn btn-sm btn-danger" onclick="confirmDelete('{{ queen.id }}', '{{ queen.name }}')">Delete</button>
+                    <td class="d-flex gap-1">
+                        <a href="/edit-queen/{{ queen.id }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="mdi mdi-pencil"></i></a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ queen.id }}', '{{ queen.name }}')" title="Delete"><i class="mdi mdi-delete"></i></button>
                     </td>
                 </tr>
                 {% endfor %}

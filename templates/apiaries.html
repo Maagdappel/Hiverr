@@ -3,11 +3,11 @@
 {% block title %}Apiaries - Hiverr{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Apiaries</h1>
+<h1 class="mb-4"><i class="mdi mdi-map-marker-multiple-outline me-1"></i> Apiaries</h1>
 
 <div class="card shadow-sm">
     <div class="card-body">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover table-striped align-middle">
             <thead class="table-light">
                 <tr>
                     <th>Name</th>
@@ -20,9 +20,10 @@
                 <tr>
                     <td>{{ apiary.name }}</td>
                     <td>{{ apiary.location }}</td>
-                    <td>
-                        <a href="/edit-apiary/{{ apiary.id }}" class="btn btn-sm btn-primary">Edit</a>
-                        <button class="btn btn-sm btn-danger" onclick="confirmDelete('{{ apiary.id }}', '{{ apiary.name }}')">Delete</button>
+                    <td class="d-flex gap-1">
+                        <a href="/edit-apiary/{{ apiary.id }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="mdi mdi-pencil"></i></a>
+                        <a href="/add-hive" class="btn btn-sm btn-outline-success" title="Add Hive"><i class="mdi mdi-beehive-outline"></i></a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ apiary.id }}', '{{ apiary.name }}')" title="Delete"><i class="mdi mdi-delete"></i></button>
                     </td>
                 </tr>
                 {% endfor %}
