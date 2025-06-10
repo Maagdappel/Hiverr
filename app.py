@@ -345,7 +345,7 @@ def setup_2fa():
         img.save(buf, format='PNG')
         qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
     except ModuleNotFoundError:
-        flash('Install qrcode[pil] to display a QR code', 'warning')
+        pass
 
     return render_template('setup_2fa.html', secret=secret, qr_data=qr_data)
 
