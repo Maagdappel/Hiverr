@@ -11,7 +11,8 @@ db = SQLAlchemy(app)
 
 @app.route('/')
 def index():
-    return render_template('index.html', active_page='dashboard')
+    apiaries = Apiary.query.all()
+    return render_template('index.html', apiaries=apiaries, active_page='dashboard')
 
 @app.route('/apiaries')
 def apiaries():
