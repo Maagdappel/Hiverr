@@ -362,7 +362,8 @@ def setup_2fa():
     except ModuleNotFoundError:
         pass
 
-    return render_template('setup_2fa.html', secret=secret, qr_data=qr_data)
+    template = 'setup_2fa_inner.html' if request.args.get('modal') else 'setup_2fa.html'
+    return render_template(template, secret=secret, qr_data=qr_data)
 
 
 @app.route('/disable-2fa', methods=['POST'])

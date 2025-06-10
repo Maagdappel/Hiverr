@@ -89,11 +89,26 @@
           </form>
         {% else %}
           <p>Two-factor authentication is disabled.</p>
-          <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary">Enable 2FA</a>
+          <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" id="enable-2fa-btn" data-bs-toggle="modal" data-bs-target="#setup2FAModal">Enable 2FA</a>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
+<div class="modal fade" id="setup2FAModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="setup2faContent"></div>
+  </div>
+</div>
+<script>
+document.getElementById('enable-2fa-btn')?.addEventListener('click', function(e){
+  e.preventDefault();
+  fetch(this.getAttribute('href') + '?modal=1')
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById('setup2faContent').innerHTML = html;
+    });
+});
+</script>
 {% endblock %}
 
