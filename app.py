@@ -337,14 +337,11 @@ def setup_2fa():
         session['tmp_2fa_secret'] = secret
 
     otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
-    try:
-        import qrcode
-        img = qrcode.make(otpauth)
-        buf = BytesIO()
-        img.save(buf, format='PNG')
-        qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
-    except Exception:
-        qr_data = ''
+    import qrcode
+    img = qrcode.make(otpauth)
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
 
     return render_template('setup_2fa.html', secret=secret, qr_data=qr_data)
 
@@ -362,21 +359,24 @@ def settings():
     user = User.query.get(session['user_id'])
     tz_list = sorted(available_timezones())
     if request.method == 'POST':
-        user.full_name = request.form.get('full_name')
-        user.username = request.form.get('username')
-        user.email = request.form.get('email')
-        user.timezone = request.form.get('timezone')
-        user.temperature_unit = request.form.get('temperature_unit')
-        user.weight_unit = request.form.get('weight_unit')
-
-        if 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and file.filename:
-                os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
-                filename = secure_filename(file.filename)
-                path = os.path.join('static', 'uploads', filename)
-                file.save(path)
-                user.profile_picture = path
+        section = request.form.get('section')
+        if section == 'profile':
+            user.full_name = request.form.get('full_name')
+            user.username = request.form.get('username')
+            email = request.form.get('email')
+            user.email = email or None
+            if 'profile_picture' in request.files:
+                file = request.files['profile_picture']
+                if file and file.filename:
+                    os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
+                    filename = secure_filename(file.filename)
+                    path = os.path.join('static', 'uploads', filename)
+                    file.save(path)
+                    user.profile_picture = path
+        elif section == 'units':
+            user.timezone = request.form.get('timezone')
+            user.temperature_unit = request.form.get('temperature_unit')
+            user.weight_unit = request.form.get('weight_unit')
 
         db.session.commit()
         flash('Settings updated successfully', 'success')
