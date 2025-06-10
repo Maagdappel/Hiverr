@@ -3,6 +3,7 @@ from flask import request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from functools import wraps
 import os
 
@@ -240,6 +241,40 @@ def delete_queen(id):
     flash(f"Queen: {queen.name} deleted successfully!", "success")
     return redirect(url_for('queens'))  # Redirect back to the queens list
 
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    user = User.query.get(session['user_id'])
+    if request.method == 'POST':
+        user.full_name = request.form.get('full_name')
+        user.username = request.form.get('username')
+        user.email = request.form.get('email')
+        user.timezone = request.form.get('timezone')
+        user.unit = request.form.get('unit')
+
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and file.filename:
+                os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
+                filename = secure_filename(file.filename)
+                path = os.path.join('static', 'uploads', filename)
+                file.save(path)
+                user.profile_picture = path
+
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        if new_password:
+            if new_password == confirm_password:
+                user.set_password(new_password)
+            else:
+                flash('Passwords do not match', 'danger')
+                return redirect(url_for('settings'))
+
+        db.session.commit()
+        flash('Settings updated successfully', 'success')
+        return redirect(url_for('settings'))
+
+    return render_template('settings.html', user=user, active_page='settings')
+
 class Apiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -273,6 +308,11 @@ class Queen(db.Model):
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    full_name = db.Column(db.String(120))
+    email = db.Column(db.String(120))
+    timezone = db.Column(db.String(50))
+    unit = db.Column(db.String(50))
+    profile_picture = db.Column(db.String(200))
     password_hash = db.Column(db.String(200), nullable=False)
 
     def set_password(self, password):

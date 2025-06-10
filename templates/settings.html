@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Hiverr{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Settings</h1>
+<form method="POST" enctype="multipart/form-data" id="settings-form">
+  <div class="mb-3">
+    <label for="full_name" class="form-label">Full Name</label>
+    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name or '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="username" class="form-label">Username</label>
+    <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+  </div>
+  <div class="mb-3">
+    <label for="email" class="form-label">E-mail</label>
+    <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="profile_picture" class="form-label">Profile Picture</label>
+    <input type="file" class="form-control" id="profile_picture" name="profile_picture">
+    {% if user.profile_picture %}
+    <img src="/{{ user.profile_picture }}" class="mt-2" style="height:100px;" alt="Profile picture">
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label for="timezone" class="form-label">Timezone</label>
+    <input type="text" class="form-control" id="timezone" name="timezone" value="{{ user.timezone or '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="unit" class="form-label">Unit of Measurement</label>
+    <input type="text" class="form-control" id="unit" name="unit" placeholder="Enter preferred units" value="{{ user.unit or '' }}">
+  </div>
+  <hr>
+  <h5>Change Password</h5>
+  <div class="mb-3">
+    <label for="new_password" class="form-label">New Password</label>
+    <input type="password" class="form-control" id="new_password" name="new_password">
+  </div>
+  <div class="mb-3">
+    <label for="confirm_password" class="form-label">Confirm Password</label>
+    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+  </div>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal">Save Changes</button>
+</form>
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalLabel">Confirm Changes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to update your settings?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" form="settings-form">Yes, Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
