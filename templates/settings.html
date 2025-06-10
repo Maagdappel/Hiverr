@@ -27,12 +27,10 @@
             <label for="email" class="form-label">E-mail</label>
             <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
           </div>
-          {% if not user.profile_picture %}
           <div class="mb-3">
             <label for="profile_picture" class="form-label">Profile Picture</label>
             <input type="file" class="form-control" id="profile_picture" name="profile_picture">
           </div>
-          {% endif %}
           <button type="submit" class="btn btn-primary">Save</button>
         </form>
       </div>
@@ -86,7 +84,9 @@
         <a href="{{ url_for('change_password') }}" class="btn btn-secondary mb-3">Change Password</a>
         {% if user.two_factor_secret %}
           <p>Two-factor authentication is enabled.</p>
-          <button class="btn btn-danger" formmethod="post" formaction="{{ url_for('disable_2fa') }}">Disable 2FA</button>
+          <form method="post" action="{{ url_for('disable_2fa') }}" class="d-inline">
+            <button type="submit" class="btn btn-danger">Disable 2FA</button>
+          </form>
         {% else %}
           <p>Two-factor authentication is disabled.</p>
           <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary">Enable 2FA</a>

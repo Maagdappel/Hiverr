@@ -75,7 +75,7 @@ def two_factor():
     user_id = session.get('pending_user_id')
     if not user_id:
         return redirect(url_for('login'))
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if request.method == 'POST':
         token = request.form.get('token')
         if verify_totp(user.two_factor_secret, token):
@@ -120,7 +120,7 @@ def apiaries():
 
 @app.route('/edit-apiary/<int:id>', methods=['GET', 'POST'])
 def edit_apiary(id):
-    apiary = Apiary.query.get(id)  # Fetch the apiary by ID
+    apiary = db.session.get(Apiary, id)  # Fetch the apiary by ID
 
     if request.method == 'POST':
         # Update the apiary with form data
@@ -135,7 +135,7 @@ def edit_apiary(id):
 
 @app.route('/delete-apiary/<int:id>', methods=['GET'])
 def delete_apiary(id):
-    apiary = Apiary.query.get(id)  # Fetch the apiary by ID
+    apiary = db.session.get(Apiary, id)  # Fetch the apiary by ID
     db.session.delete(apiary)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Apiary: {apiary.name} deleted successfully!", "success")
@@ -193,7 +193,7 @@ def add_hive():
 
 @app.route('/edit-hive/<int:id>', methods=['GET', 'POST'])
 def edit_hive(id):
-    hive = Hive.query.get(id)  # Fetch the hive by ID
+    hive = db.session.get(Hive, id)  # Fetch the hive by ID
     apiaries = Apiary.query.all() # Get all apiaries
 
     if request.method == 'POST':
@@ -209,7 +209,7 @@ def edit_hive(id):
 
 @app.route('/delete-hive/<int:id>', methods=['GET'])
 def delete_hive(id):
-    hive = Hive.query.get(id)  # Fetch the hive by ID
+    hive = db.session.get(Hive, id)  # Fetch the hive by ID
     db.session.delete(hive)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Hive: {hive.name} deleted successfully!", "success")
@@ -253,7 +253,7 @@ def add_queen():
 
 @app.route('/edit-queen/<int:id>', methods=['GET', 'POST'])
 def edit_queen(id):
-    queen = Queen.query.get(id)  # Fetch the Queen by ID
+    queen = db.session.get(Queen, id)  # Fetch the Queen by ID
 
     # Find hives where no queen is currently assigned, include the current hive
     hives = Hive.query.filter(~Hive.queens.any()).all()
@@ -290,7 +290,7 @@ def edit_queen(id):
 
 @app.route('/delete-queen/<int:id>', methods=['GET'])
 def delete_queen(id):
-    queen = Queen.query.get(id)  # Fetch the queen by ID
+    queen = db.session.get(Queen, id)  # Fetch the queen by ID
     db.session.delete(queen)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Queen: {queen.name} deleted successfully!", "success")
@@ -298,7 +298,7 @@ def delete_queen(id):
 
 @app.route('/change-password', methods=['GET', 'POST'])
 def change_password():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     if request.method == 'POST':
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
@@ -317,7 +317,7 @@ def change_password():
 
 @app.route('/setup-2fa', methods=['GET', 'POST'])
 def setup_2fa():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     if user.two_factor_secret:
         flash('Two-factor authentication is already enabled', 'info')
         return redirect(url_for('settings'))
@@ -337,7 +337,11 @@ def setup_2fa():
         session['tmp_2fa_secret'] = secret
 
     otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
-    import qrcode
+    try:
+        import qrcode
+    except ModuleNotFoundError:
+        flash('qrcode package not installed', 'danger')
+        return redirect(url_for('settings'))
     img = qrcode.make(otpauth)
     buf = BytesIO()
     img.save(buf, format='PNG')
@@ -348,7 +352,7 @@ def setup_2fa():
 
 @app.route('/disable-2fa', methods=['POST'])
 def disable_2fa():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     user.two_factor_secret = None
     db.session.commit()
     flash('Two-factor authentication disabled', 'success')
@@ -356,8 +360,11 @@ def disable_2fa():
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     tz_list = sorted(available_timezones())
+    if not user.timezone:
+        user.timezone = datetime.now().astimezone().tzinfo.key
+        db.session.commit()
     if request.method == 'POST':
         section = request.form.get('section')
         if section == 'profile':
@@ -440,7 +447,7 @@ def inject_sidebar_apiaries():
 @app.context_processor
 def inject_current_user():
     if 'user_id' in session:
-        user = User.query.get(session['user_id'])
+        user = db.session.get(User, session['user_id'])
         return {'current_user': user}
     return {}
 
