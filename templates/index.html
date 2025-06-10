@@ -5,7 +5,39 @@
 {% block content %}
 <h1 class="mb-5">Dashboard</h1>
 
-<a href="/apiaries" class="btn btn-primary">Manage Apiaries</a>
-<a href="/hives" class="btn btn-primary">Manage Hives</a>
-<a href="/queens" class="btn btn-primary">Manage Queens</a>
+<div class="mb-4">
+    <a href="/apiaries" class="btn btn-primary">Manage Apiaries</a>
+    <a href="/hives" class="btn btn-primary">Manage Hives</a>
+    <a href="/queens" class="btn btn-primary">Manage Queens</a>
+</div>
+
+{% for apiary in apiaries %}
+<div class="card mb-3">
+    <div class="card-header">
+        <strong>{{ apiary.name }}</strong> - {{ apiary.location }}
+    </div>
+    <div class="card-body">
+        {% if apiary.hives %}
+            <ul class="list-group list-group-flush">
+            {% for hive in apiary.hives %}
+                <li class="list-group-item">
+                    <strong>{{ hive.name }}</strong>
+                    {% if hive.queens %}
+                        <ul class="mt-2">
+                        {% for queen in hive.queens %}
+                            <li>{{ queen.name }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted small">No queens</div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted mb-0">No hives</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
