@@ -1,0 +1,29 @@
+// Toggle between light and dark themes using Bootstrap 5's data-bs-theme
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('theme', theme);
+    const icon = document.querySelector('#theme-toggle i');
+    if (icon) {
+        if (theme === 'dark') {
+            icon.className = 'mdi mdi-white-balance-sunny';
+        } else {
+            icon.className = 'mdi mdi-moon-waning-crescent';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    setTheme(theme);
+
+    const toggle = document.getElementById('theme-toggle');
+    if (toggle) {
+        toggle.addEventListener('click', function () {
+            const current = document.documentElement.getAttribute('data-bs-theme');
+            const next = current === 'light' ? 'dark' : 'light';
+            setTheme(next);
+        });
+    }
+});
