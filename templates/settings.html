@@ -107,12 +107,20 @@ document.getElementById('enable-2fa-btn')?.addEventListener('click', function(e)
     .then(r => r.text())
     .then(html => {
       document.getElementById('setup2faContent').innerHTML = html;
-      attachVerifyHandler();
+      attachSetupHandlers();
     });
 });
 
-function attachVerifyHandler() {
+function attachSetupHandlers() {
   const form = document.querySelector('#setup2faContent #verify-form');
+  const toggle = document.querySelector('#setup2faContent #toggle-secret');
+  if (toggle) {
+    toggle.addEventListener('click', function(){
+      const pre = document.getElementById('totp-secret');
+      pre.classList.toggle('d-none');
+      toggle.classList.toggle('text-decoration-line-through');
+    });
+  }
   if (!form) return;
   form.addEventListener('submit', function(ev){
     ev.preventDefault();
@@ -129,7 +137,7 @@ function attachVerifyHandler() {
         } else {
           return r.text().then(html => {
             document.getElementById('setup2faContent').innerHTML = html;
-            attachVerifyHandler();
+            attachSetupHandlers();
           });
         }
       });

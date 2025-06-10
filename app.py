@@ -329,6 +329,7 @@ def setup_2fa():
         secret = generate_totp_secret()
         session['tmp_2fa_secret'] = secret
 
+    error = None
     if request.method == 'POST':
         token = request.form.get('token')
         if secret and verify_totp(secret, token):
@@ -339,7 +340,7 @@ def setup_2fa():
             if modal:
                 return jsonify(success=True)
             return redirect(url_for('settings'))
-        flash('Invalid authentication code', 'danger')
+        error = 'Invalid authentication code'
 
     otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
     qr_data = None
@@ -368,7 +369,7 @@ def setup_2fa():
         pass
 
     template = 'setup_2fa_inner.html' if modal else 'setup_2fa.html'
-    return render_template(template, secret=secret, qr_data=qr_data)
+    return render_template(template, secret=secret, qr_data=qr_data, error=error)
 
 
 @app.route('/disable-2fa', methods=['POST'])
