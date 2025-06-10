@@ -107,8 +107,34 @@ document.getElementById('enable-2fa-btn')?.addEventListener('click', function(e)
     .then(r => r.text())
     .then(html => {
       document.getElementById('setup2faContent').innerHTML = html;
+      attachVerifyHandler();
     });
 });
+
+function attachVerifyHandler() {
+  const form = document.querySelector('#setup2faContent #verify-form');
+  if (!form) return;
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    fetch(form.action, { method: 'POST', body: new FormData(form) })
+      .then(r => {
+        const ct = r.headers.get('Content-Type') || '';
+        if (ct.includes('application/json')) {
+          return r.json().then(data => {
+            if (data.success) {
+              bootstrap.Modal.getInstance(document.getElementById('setup2FAModal')).hide();
+              location.reload();
+            }
+          });
+        } else {
+          return r.text().then(html => {
+            document.getElementById('setup2faContent').innerHTML = html;
+            attachVerifyHandler();
+          });
+        }
+      });
+  }, { once: true });
+}
 </script>
 {% endblock %}
 

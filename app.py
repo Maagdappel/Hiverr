@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask import request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -322,19 +322,24 @@ def setup_2fa():
         flash('Two-factor authentication is already enabled', 'info')
         return redirect(url_for('settings'))
 
+    modal = request.args.get('modal')
+
+    secret = session.get('tmp_2fa_secret')
+    if not secret:
+        secret = generate_totp_secret()
+        session['tmp_2fa_secret'] = secret
+
     if request.method == 'POST':
-        secret = session.get('tmp_2fa_secret')
         token = request.form.get('token')
         if secret and verify_totp(secret, token):
             user.two_factor_secret = secret
             db.session.commit()
             session.pop('tmp_2fa_secret', None)
             flash('Two-factor authentication enabled', 'success')
+            if modal:
+                return jsonify(success=True)
             return redirect(url_for('settings'))
         flash('Invalid authentication code', 'danger')
-    else:
-        secret = generate_totp_secret()
-        session['tmp_2fa_secret'] = secret
 
     otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
     qr_data = None
@@ -362,7 +367,7 @@ def setup_2fa():
     except ModuleNotFoundError:
         pass
 
-    template = 'setup_2fa_inner.html' if request.args.get('modal') else 'setup_2fa.html'
+    template = 'setup_2fa_inner.html' if modal else 'setup_2fa.html'
     return render_template(template, secret=secret, qr_data=qr_data)
 
 
