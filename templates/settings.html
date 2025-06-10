@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1 class="mb-4">Settings</h1>
-<form method="POST" enctype="multipart/form-data" id="settings-form">
+<form method="POST" enctype="multipart/form-data" id="settings-form" class="w-50">
   <div class="mb-3">
     <label for="full_name" class="form-label">Full Name</label>
     <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name or '' }}">
@@ -26,23 +26,28 @@
   </div>
   <div class="mb-3">
     <label for="timezone" class="form-label">Timezone</label>
-    <input type="text" class="form-control" id="timezone" name="timezone" value="{{ user.timezone or '' }}">
+    <select class="form-select" id="timezone" name="timezone">
+      {% for tz in timezones %}
+      <option value="{{ tz }}" {% if user.timezone==tz %}selected{% endif %}>{{ tz }}</option>
+      {% endfor %}
+    </select>
   </div>
   <div class="mb-3">
-    <label for="unit" class="form-label">Unit of Measurement</label>
-    <input type="text" class="form-control" id="unit" name="unit" placeholder="Enter preferred units" value="{{ user.unit or '' }}">
-  </div>
-  <hr>
-  <h5>Change Password</h5>
-  <div class="mb-3">
-    <label for="new_password" class="form-label">New Password</label>
-    <input type="password" class="form-control" id="new_password" name="new_password">
+    <label for="temperature_unit" class="form-label">Temperature Unit</label>
+    <select class="form-select" id="temperature_unit" name="temperature_unit">
+      <option value="C" {% if user.temperature_unit=='C' %}selected{% endif %}>Celsius</option>
+      <option value="F" {% if user.temperature_unit=='F' %}selected{% endif %}>Fahrenheit</option>
+    </select>
   </div>
   <div class="mb-3">
-    <label for="confirm_password" class="form-label">Confirm Password</label>
-    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+    <label for="weight_unit" class="form-label">Weight Unit</label>
+    <select class="form-select" id="weight_unit" name="weight_unit">
+      <option value="kg" {% if user.weight_unit=='kg' %}selected{% endif %}>Kilograms</option>
+      <option value="lbs" {% if user.weight_unit=='lbs' %}selected{% endif %}>Pounds</option>
+    </select>
   </div>
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal">Save Changes</button>
+  <a href="{{ url_for('change_password') }}" class="btn btn-secondary ms-2">Change Password</a>
 </form>
 
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">

@@ -124,9 +124,6 @@
         <a href="/queens" class="sidebar-link {% if active_page == 'queens' %}active{% endif %}">
             <i class="mdi mdi-crown"></i> Queens
         </a>
-        <a href="/settings" class="sidebar-link {% if active_page == 'settings' %}active{% endif %}">
-            <i class="mdi mdi-cog"></i> Settings
-        </a>
         {% if sidebar_apiaries %}
         <hr class="bg-secondary mt-3 mb-1">
         <div class="text-white-50 text-center small mb-2">Your Apiaries</div>
@@ -158,12 +155,20 @@
           {% endfor %}
         </div>
         {% endif %}
+        <a href="/settings" class="sidebar-link {% if active_page == 'settings' %}active{% endif %}">
+            <i class="mdi mdi-cog"></i> Settings
+        </a>
         <div class="mt-auto p-3">
             <button class="btn btn-outline-secondary w-100" id="theme-toggle" title="Toggle theme">
                 <i class="mdi mdi-moon-waning-crescent"></i>
             </button>
             {% if current_user %}
-            <div class="text-white mt-3 text-center small">Hi {{ current_user.username }}!</div>
+            <div class="d-flex align-items-center justify-content-center gap-2 mt-3">
+                {% if current_user.profile_picture %}
+                <img src="/{{ current_user.profile_picture }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">
+                {% endif %}
+                <span class="text-white small">Hi {{ current_user.username }}!</span>
+            </div>
             <button type="button" class="btn btn-danger btn-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#logoutModal">Log out</button>
             {% endif %}
         </div>
