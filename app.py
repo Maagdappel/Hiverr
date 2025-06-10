@@ -11,8 +11,7 @@ db = SQLAlchemy(app)
 
 @app.route('/')
 def index():
-    apiaries = Apiary.query.all()
-    return render_template('index.html', apiaries=apiaries, active_page='dashboard')
+    return render_template('index.html', active_page='dashboard')
 
 @app.route('/apiaries')
 def apiaries():
@@ -226,6 +225,10 @@ class Queen(db.Model):
 
     def __repr__(self):
         return f'<Queen {self.name}>'
+
+@app.context_processor
+def inject_sidebar_apiaries():
+    return {'sidebar_apiaries': Apiary.query.all()}
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=80)

@@ -41,6 +41,17 @@
             margin-right: 10px;
             font-size: 1.4rem; /* Make MDI icons a little bigger */
         }
+        .sidebar-sublink {
+            color: #adb5bd;
+            text-decoration: none;
+            display: block;
+            padding: 8px 15px 8px 30px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .sidebar-sublink:hover {
+            background-color: #495057;
+            color: white;
+        }
         .content {
             flex-grow: 1;
             padding: 20px;
@@ -69,6 +80,42 @@
         <a href="/queens" class="sidebar-link {% if active_page == 'queens' %}active{% endif %}">
             <i class="mdi mdi-crown"></i> Queens
         </a>
+
+        {% if sidebar_apiaries %}
+        <div class="accordion accordion-flush mt-3" id="apiarySidebar">
+          {% for apiary in sidebar_apiaries %}
+          <div class="accordion-item bg-dark border-0">
+            <h2 class="accordion-header" id="heading{{ apiary.id }}">
+              <button class="accordion-button collapsed bg-dark text-white py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ apiary.id }}" aria-expanded="false" aria-controls="collapse{{ apiary.id }}">
+                {{ apiary.name }}
+              </button>
+            </h2>
+            <div id="collapse{{ apiary.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ apiary.id }}" data-bs-parent="#apiarySidebar">
+              <div class="accordion-body p-0">
+                {% if apiary.hives %}
+                <ul class="list-unstyled">
+                  {% for hive in apiary.hives %}
+                  <li>
+                    <a href="/edit-hive/{{ hive.id }}" class="sidebar-sublink">{{ hive.name }}</a>
+                    {% if hive.queens %}
+                    <ul class="list-unstyled">
+                      {% for queen in hive.queens %}
+                      <li><a href="/edit-queen/{{ queen.id }}" class="sidebar-sublink">{{ queen.name }}</a></li>
+                      {% endfor %}
+                    </ul>
+                    {% endif %}
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-white-50 ps-4 mb-2 small">No hives</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="content">
