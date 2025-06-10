@@ -340,10 +340,25 @@ def setup_2fa():
     qr_data = None
     try:
         import qrcode
-        img = qrcode.make(otpauth)
+        from qrcode.image.styledpil import StyledPilImage
+        from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
+        from qrcode.image.styles.colormasks import RadialGradiantColorMask
+
+        qr = qrcode.QRCode(
+            error_correction=qrcode.constants.ERROR_CORRECT_Q,
+            box_size=8,
+            border=1,
+        )
+        qr.add_data(otpauth)
+        qr.make(fit=True)
+        img = qr.make_image(
+            image_factory=StyledPilImage,
+            module_drawer=RoundedModuleDrawer(),
+            color_mask=RadialGradiantColorMask(),
+        )
         buf = BytesIO()
-        img.save(buf, format='PNG')
-        qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+        img.save(buf, format="PNG")
+        qr_data = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
     except ModuleNotFoundError:
         pass
 
