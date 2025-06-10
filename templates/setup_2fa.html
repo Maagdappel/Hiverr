@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Enable Two-Factor - Hiverr{% endblock %}
+{% block content %}
+<h1 class="mb-4">Enable Two-Factor Authentication</h1>
+<p>Scan the QR code or enter the secret in your authenticator app. Then enter the six-digit code below to confirm.</p>
+<div class="mb-3">
+  <img src="{{ qr_data }}" alt="QR Code" class="mb-3" />
+  <pre>{{ secret }}</pre>
+</div>
+<form method="post" class="w-50" id="verify-form">
+  <div class="mb-3">
+    <label for="token" class="form-label">Authentication Code</label>
+    <input type="text" class="form-control" id="token" name="token" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Confirm</button>
+  <a href="{{ url_for('settings') }}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

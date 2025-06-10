@@ -5,49 +5,72 @@
 {% block content %}
 <h1 class="mb-4">Settings</h1>
 <form method="POST" enctype="multipart/form-data" id="settings-form" class="w-50">
-  <div class="mb-3">
-    <label for="full_name" class="form-label">Full Name</label>
-    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name or '' }}">
+  <div class="card mb-4">
+    <div class="card-header">Profile</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label for="full_name" class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name or '' }}">
+      </div>
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">E-mail</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+      </div>
+      {% if not user.profile_picture %}
+      <div class="mb-3">
+        <label for="profile_picture" class="form-label">Profile Picture</label>
+        <input type="file" class="form-control" id="profile_picture" name="profile_picture">
+      </div>
+      {% endif %}
+    </div>
   </div>
-  <div class="mb-3">
-    <label for="username" class="form-label">Username</label>
-    <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+  <div class="card mb-4">
+    <div class="card-header">Units &amp; Timezone</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label for="timezone" class="form-label">Timezone</label>
+        <select class="form-select" id="timezone" name="timezone">
+          {% for tz in timezones %}
+          <option value="{{ tz }}" {% if user.timezone==tz %}selected{% endif %}>{{ tz }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="temperature_unit" class="form-label">Temperature Unit</label>
+        <select class="form-select" id="temperature_unit" name="temperature_unit">
+          <option value="C" {% if user.temperature_unit=='C' %}selected{% endif %}>Celsius</option>
+          <option value="F" {% if user.temperature_unit=='F' %}selected{% endif %}>Fahrenheit</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="weight_unit" class="form-label">Weight Unit</label>
+        <select class="form-select" id="weight_unit" name="weight_unit">
+          <option value="kg" {% if user.weight_unit=='kg' %}selected{% endif %}>Kilograms</option>
+          <option value="lbs" {% if user.weight_unit=='lbs' %}selected{% endif %}>Pounds</option>
+        </select>
+      </div>
+    </div>
   </div>
-  <div class="mb-3">
-    <label for="email" class="form-label">E-mail</label>
-    <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
-  </div>
-  <div class="mb-3">
-    <label for="profile_picture" class="form-label">Profile Picture</label>
-    <input type="file" class="form-control" id="profile_picture" name="profile_picture">
-    {% if user.profile_picture %}
-    <img src="/{{ user.profile_picture }}" class="mt-2" style="height:100px;" alt="Profile picture">
-    {% endif %}
-  </div>
-  <div class="mb-3">
-    <label for="timezone" class="form-label">Timezone</label>
-    <select class="form-select" id="timezone" name="timezone">
-      {% for tz in timezones %}
-      <option value="{{ tz }}" {% if user.timezone==tz %}selected{% endif %}>{{ tz }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="mb-3">
-    <label for="temperature_unit" class="form-label">Temperature Unit</label>
-    <select class="form-select" id="temperature_unit" name="temperature_unit">
-      <option value="C" {% if user.temperature_unit=='C' %}selected{% endif %}>Celsius</option>
-      <option value="F" {% if user.temperature_unit=='F' %}selected{% endif %}>Fahrenheit</option>
-    </select>
-  </div>
-  <div class="mb-3">
-    <label for="weight_unit" class="form-label">Weight Unit</label>
-    <select class="form-select" id="weight_unit" name="weight_unit">
-      <option value="kg" {% if user.weight_unit=='kg' %}selected{% endif %}>Kilograms</option>
-      <option value="lbs" {% if user.weight_unit=='lbs' %}selected{% endif %}>Pounds</option>
-    </select>
+  <div class="card mb-4">
+    <div class="card-header">Security</div>
+    <div class="card-body">
+      <a href="{{ url_for('change_password') }}" class="btn btn-secondary mb-3">Change Password</a>
+      {% if user.two_factor_secret %}
+        <p>Two-factor authentication is enabled.</p>
+        <form method="post" action="{{ url_for('disable_2fa') }}">
+          <button class="btn btn-danger" type="submit">Disable 2FA</button>
+        </form>
+      {% else %}
+        <p>Two-factor authentication is disabled.</p>
+        <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary">Enable 2FA</a>
+      {% endif %}
+    </div>
   </div>
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal">Save Changes</button>
-  <a href="{{ url_for('change_password') }}" class="btn btn-secondary ms-2">Change Password</a>
 </form>
 
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">

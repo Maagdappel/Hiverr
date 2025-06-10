@@ -1,0 +1,12 @@
+{% extends "auth_base.html" %}
+{% block title %}Two-Factor Authentication - Hiverr{% endblock %}
+{% block content %}
+<h1 class="mb-4 text-center">Two-Factor Authentication</h1>
+<form method="post" class="w-50 mx-auto">
+  <div class="mb-3">
+    <label for="token" class="form-label">Authentication Code</label>
+    <input type="text" class="form-control" id="token" name="token" required autofocus>
+  </div>
+  <button type="submit" class="btn btn-primary w-100">Verify</button>
+</form>
+{% endblock %}

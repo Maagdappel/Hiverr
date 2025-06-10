@@ -7,14 +7,48 @@ from werkzeug.utils import secure_filename
 from zoneinfo import available_timezones
 from functools import wraps
 import os
+import base64
+import hmac
+import hashlib
+import struct
+import time
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hiverr.db'
 db = SQLAlchemy(app)
+
+
+def generate_totp_secret():
+    return base64.b32encode(os.urandom(10)).decode('utf-8')
+
+
+def totp_now(secret, interval=30, digits=6):
+    key = base64.b32decode(secret, True)
+    counter = int(time.time()) // interval
+    msg = struct.pack('>Q', counter)
+    digest = hmac.new(key, msg, hashlib.sha1).digest()
+    offset = digest[-1] & 0xf
+    code = struct.unpack('>I', digest[offset:offset + 4])[0] & 0x7fffffff
+    return str(code % (10 ** digits)).zfill(digits)
+
+
+def verify_totp(secret, token):
+    for drift in (-1, 0, 1):
+        key = base64.b32decode(secret, True)
+        counter = int((time.time() + drift * 30) // 30)
+        msg = struct.pack('>Q', counter)
+        digest = hmac.new(key, msg, hashlib.sha1).digest()
+        offset = digest[-1] & 0xf
+        code = struct.unpack('>I', digest[offset:offset + 4])[0] & 0x7fffffff
+        expected = str(code % (10 ** 6)).zfill(6)
+        if token == expected:
+            return True
+    return False
 @app.before_request
 def require_login():
-    allowed_endpoints = {'login', 'register', 'static'}
+    allowed_endpoints = {'login', 'register', 'static', 'two_factor'}
     if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -26,11 +60,31 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if user.two_factor_secret:
+                session['pending_user_id'] = user.id
+                return redirect(url_for('two_factor'))
             session['user_id'] = user.id
             session['username'] = user.username
             return redirect(url_for('index'))
         flash('Invalid credentials', 'danger')
     return render_template('login.html')
+
+
+@app.route('/two-factor', methods=['GET', 'POST'])
+def two_factor():
+    user_id = session.get('pending_user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    user = User.query.get(user_id)
+    if request.method == 'POST':
+        token = request.form.get('token')
+        if verify_totp(user.two_factor_secret, token):
+            session.pop('pending_user_id')
+            session['user_id'] = user.id
+            session['username'] = user.username
+            return redirect(url_for('index'))
+        flash('Invalid authentication code', 'danger')
+    return render_template('two_factor.html')
 
 
 @app.route('/logout', methods=['POST'])
@@ -260,6 +314,49 @@ def change_password():
         return redirect(url_for('settings'))
     return render_template('change_password.html', active_page='settings')
 
+
+@app.route('/setup-2fa', methods=['GET', 'POST'])
+def setup_2fa():
+    user = User.query.get(session['user_id'])
+    if user.two_factor_secret:
+        flash('Two-factor authentication is already enabled', 'info')
+        return redirect(url_for('settings'))
+
+    if request.method == 'POST':
+        secret = session.get('tmp_2fa_secret')
+        token = request.form.get('token')
+        if secret and verify_totp(secret, token):
+            user.two_factor_secret = secret
+            db.session.commit()
+            session.pop('tmp_2fa_secret', None)
+            flash('Two-factor authentication enabled', 'success')
+            return redirect(url_for('settings'))
+        flash('Invalid authentication code', 'danger')
+    else:
+        secret = generate_totp_secret()
+        session['tmp_2fa_secret'] = secret
+
+    otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
+    try:
+        import qrcode
+        img = qrcode.make(otpauth)
+        buf = BytesIO()
+        img.save(buf, format='PNG')
+        qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        qr_data = ''
+
+    return render_template('setup_2fa.html', secret=secret, qr_data=qr_data)
+
+
+@app.route('/disable-2fa', methods=['POST'])
+def disable_2fa():
+    user = User.query.get(session['user_id'])
+    user.two_factor_secret = None
+    db.session.commit()
+    flash('Two-factor authentication disabled', 'success')
+    return redirect(url_for('settings'))
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     user = User.query.get(session['user_id'])
@@ -326,6 +423,7 @@ class User(db.Model):
     temperature_unit = db.Column(db.String(10))
     weight_unit = db.Column(db.String(10))
     profile_picture = db.Column(db.String(200))
+    two_factor_secret = db.Column(db.String(32))
     password_hash = db.Column(db.String(200), nullable=False)
 
     def set_password(self, password):
