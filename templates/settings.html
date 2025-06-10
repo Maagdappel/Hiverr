@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Hiverr{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Settings</h1>
+<div class="accordion w-50" id="settingsAcc">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingProfile">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProfile" aria-expanded="false" aria-controls="collapseProfile">
+        Profile
+      </button>
+    </h2>
+    <div id="collapseProfile" class="accordion-collapse collapse" data-bs-parent="#settingsAcc">
+      <div class="accordion-body">
+        <form method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="section" value="profile">
+          <div class="mb-3">
+            <label for="full_name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name or '' }}">
+          </div>
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+          </div>
+          <div class="mb-3">
+            <label for="profile_picture" class="form-label">Profile Picture</label>
+            <input type="file" class="form-control" id="profile_picture" name="profile_picture">
+          </div>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingUnits">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUnits" aria-expanded="false" aria-controls="collapseUnits">
+        Units &amp; Timezone
+      </button>
+    </h2>
+    <div id="collapseUnits" class="accordion-collapse collapse" data-bs-parent="#settingsAcc">
+      <div class="accordion-body">
+        <form method="POST">
+          <input type="hidden" name="section" value="units">
+          <div class="mb-3">
+            <label for="timezone" class="form-label">Timezone</label>
+            <select class="form-select" id="timezone" name="timezone">
+              {% for tz in timezones %}
+              <option value="{{ tz }}" {% if user.timezone==tz %}selected{% endif %}>{{ tz }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="temperature_unit" class="form-label">Temperature Unit</label>
+            <select class="form-select" id="temperature_unit" name="temperature_unit">
+              <option value="C" {% if user.temperature_unit=='C' %}selected{% endif %}>Celsius</option>
+              <option value="F" {% if user.temperature_unit=='F' %}selected{% endif %}>Fahrenheit</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="weight_unit" class="form-label">Weight Unit</label>
+            <select class="form-select" id="weight_unit" name="weight_unit">
+              <option value="kg" {% if user.weight_unit=='kg' %}selected{% endif %}>Kilograms</option>
+              <option value="lbs" {% if user.weight_unit=='lbs' %}selected{% endif %}>Pounds</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingSecurity">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSecurity" aria-expanded="false" aria-controls="collapseSecurity">
+        Security
+      </button>
+    </h2>
+    <div id="collapseSecurity" class="accordion-collapse collapse" data-bs-parent="#settingsAcc">
+      <div class="accordion-body">
+        <a href="{{ url_for('change_password') }}" class="btn btn-secondary mb-3">Change Password</a>
+        {% if user.two_factor_secret %}
+          <p>Two-factor authentication is enabled.</p>
+          <form method="post" action="{{ url_for('disable_2fa') }}" class="d-inline">
+            <button type="submit" class="btn btn-danger">Disable 2FA</button>
+          </form>
+        {% else %}
+          <p>Two-factor authentication is disabled.</p>
+          <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" id="enable-2fa-btn" data-bs-toggle="modal" data-bs-target="#setup2FAModal">Enable 2FA</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="setup2FAModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="setup2faContent"></div>
+  </div>
+</div>
+<script>
+document.getElementById('enable-2fa-btn')?.addEventListener('click', function(e){
+  e.preventDefault();
+  fetch(this.getAttribute('href') + '?modal=1')
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById('setup2faContent').innerHTML = html;
+      attachSetupHandlers();
+    });
+});
+
+function attachSetupHandlers() {
+  const form = document.querySelector('#setup2faContent #verify-form');
+  const toggle = document.querySelector('#setup2faContent #toggle-secret');
+  if (toggle) {
+    toggle.addEventListener('click', function(){
+      const pre = document.getElementById('totp-secret');
+      pre.classList.toggle('d-none');
+      toggle.classList.toggle('text-decoration-line-through');
+    });
+  }
+  if (!form) return;
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    fetch(form.action, { method: 'POST', body: new FormData(form) })
+      .then(r => {
+        const ct = r.headers.get('Content-Type') || '';
+        if (ct.includes('application/json')) {
+          return r.json().then(data => {
+            if (data.success) {
+              bootstrap.Modal.getInstance(document.getElementById('setup2FAModal')).hide();
+              location.reload();
+            }
+          });
+        } else {
+          return r.text().then(html => {
+            document.getElementById('setup2faContent').innerHTML = html;
+            attachSetupHandlers();
+          });
+        }
+      });
+  }, { once: true });
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,40 @@
+<div class="d-flex justify-content-center">
+  <div class="card p-4 border-0" style="max-width: 420px;">
+    <h1 class="card-title mb-3 text-center">Enable Two-Factor Authentication</h1>
+    {% if error %}
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% else %}
+    <p class="text-center">Scan the QR code or enter the secret below.</p>
+    {% endif %}
+    {% if qr_data %}
+    <img src="{{ qr_data }}" alt="QR Code" class="d-block mx-auto mb-3" />
+    {% else %}
+    <p class="text-warning text-center">QR code not available. Enter the secret manually.</p>
+    {% endif %}
+    <button type="button" class="btn btn-link d-block mx-auto mb-2" id="toggle-secret">Can't scan QR code? Show TOTP secret</button>
+    <pre class="text-center d-none" id="totp-secret">{{ secret }}</pre>
+    <form method="post" id="verify-form" action="{{ url_for('setup_2fa') }}?modal=1">
+      <div class="mb-3">
+        <label for="token" class="form-label">Authentication Code</label>
+        <input type="text" class="form-control" id="token" name="token" required>
+      </div>
+      <div class="d-flex justify-content-between">
+        <button type="submit" class="btn btn-primary">Confirm</button>
+        <a href="{{ url_for('settings') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function setupTotpPage() {
+  const toggle = document.getElementById('toggle-secret');
+  if (toggle) {
+    toggle.addEventListener('click', function(){
+      const pre = document.getElementById('totp-secret');
+      pre.classList.toggle('d-none');
+      toggle.classList.toggle('text-decoration-line-through');
+    });
+  }
+}
+setupTotpPage();
+</script>

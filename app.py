@@ -1,18 +1,54 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask import request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from zoneinfo import available_timezones
 from functools import wraps
 import os
+import base64
+import hmac
+import hashlib
+import struct
+import time
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hiverr.db'
 db = SQLAlchemy(app)
+
+
+def generate_totp_secret():
+    return base64.b32encode(os.urandom(10)).decode('utf-8')
+
+
+def totp_now(secret, interval=30, digits=6):
+    key = base64.b32decode(secret, True)
+    counter = int(time.time()) // interval
+    msg = struct.pack('>Q', counter)
+    digest = hmac.new(key, msg, hashlib.sha1).digest()
+    offset = digest[-1] & 0xf
+    code = struct.unpack('>I', digest[offset:offset + 4])[0] & 0x7fffffff
+    return str(code % (10 ** digits)).zfill(digits)
+
+
+def verify_totp(secret, token):
+    for drift in (-1, 0, 1):
+        key = base64.b32decode(secret, True)
+        counter = int((time.time() + drift * 30) // 30)
+        msg = struct.pack('>Q', counter)
+        digest = hmac.new(key, msg, hashlib.sha1).digest()
+        offset = digest[-1] & 0xf
+        code = struct.unpack('>I', digest[offset:offset + 4])[0] & 0x7fffffff
+        expected = str(code % (10 ** 6)).zfill(6)
+        if token == expected:
+            return True
+    return False
 @app.before_request
 def require_login():
-    allowed_endpoints = {'login', 'register', 'static'}
+    allowed_endpoints = {'login', 'register', 'static', 'two_factor'}
     if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -24,11 +60,31 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if user.two_factor_secret:
+                session['pending_user_id'] = user.id
+                return redirect(url_for('two_factor'))
             session['user_id'] = user.id
             session['username'] = user.username
             return redirect(url_for('index'))
         flash('Invalid credentials', 'danger')
     return render_template('login.html')
+
+
+@app.route('/two-factor', methods=['GET', 'POST'])
+def two_factor():
+    user_id = session.get('pending_user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    user = db.session.get(User, user_id)
+    if request.method == 'POST':
+        token = request.form.get('token')
+        if verify_totp(user.two_factor_secret, token):
+            session.pop('pending_user_id')
+            session['user_id'] = user.id
+            session['username'] = user.username
+            return redirect(url_for('index'))
+        flash('Invalid authentication code', 'danger')
+    return render_template('two_factor.html')
 
 
 @app.route('/logout', methods=['POST'])
@@ -64,7 +120,7 @@ def apiaries():
 
 @app.route('/edit-apiary/<int:id>', methods=['GET', 'POST'])
 def edit_apiary(id):
-    apiary = Apiary.query.get(id)  # Fetch the apiary by ID
+    apiary = db.session.get(Apiary, id)  # Fetch the apiary by ID
 
     if request.method == 'POST':
         # Update the apiary with form data
@@ -79,7 +135,7 @@ def edit_apiary(id):
 
 @app.route('/delete-apiary/<int:id>', methods=['GET'])
 def delete_apiary(id):
-    apiary = Apiary.query.get(id)  # Fetch the apiary by ID
+    apiary = db.session.get(Apiary, id)  # Fetch the apiary by ID
     db.session.delete(apiary)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Apiary: {apiary.name} deleted successfully!", "success")
@@ -137,7 +193,7 @@ def add_hive():
 
 @app.route('/edit-hive/<int:id>', methods=['GET', 'POST'])
 def edit_hive(id):
-    hive = Hive.query.get(id)  # Fetch the hive by ID
+    hive = db.session.get(Hive, id)  # Fetch the hive by ID
     apiaries = Apiary.query.all() # Get all apiaries
 
     if request.method == 'POST':
@@ -153,7 +209,7 @@ def edit_hive(id):
 
 @app.route('/delete-hive/<int:id>', methods=['GET'])
 def delete_hive(id):
-    hive = Hive.query.get(id)  # Fetch the hive by ID
+    hive = db.session.get(Hive, id)  # Fetch the hive by ID
     db.session.delete(hive)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Hive: {hive.name} deleted successfully!", "success")
@@ -197,7 +253,7 @@ def add_queen():
 
 @app.route('/edit-queen/<int:id>', methods=['GET', 'POST'])
 def edit_queen(id):
-    queen = Queen.query.get(id)  # Fetch the Queen by ID
+    queen = db.session.get(Queen, id)  # Fetch the Queen by ID
 
     # Find hives where no queen is currently assigned, include the current hive
     hives = Hive.query.filter(~Hive.queens.any()).all()
@@ -234,11 +290,129 @@ def edit_queen(id):
 
 @app.route('/delete-queen/<int:id>', methods=['GET'])
 def delete_queen(id):
-    queen = Queen.query.get(id)  # Fetch the queen by ID
+    queen = db.session.get(Queen, id)  # Fetch the queen by ID
     db.session.delete(queen)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Queen: {queen.name} deleted successfully!", "success")
     return redirect(url_for('queens'))  # Redirect back to the queens list
+
+@app.route('/change-password', methods=['GET', 'POST'])
+def change_password():
+    user = db.session.get(User, session['user_id'])
+    if request.method == 'POST':
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        if not new_password:
+            flash('Password cannot be empty', 'danger')
+            return redirect(url_for('change_password'))
+        if new_password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return redirect(url_for('change_password'))
+        user.set_password(new_password)
+        db.session.commit()
+        flash('Password updated successfully', 'success')
+        return redirect(url_for('settings'))
+    return render_template('change_password.html', active_page='settings')
+
+
+@app.route('/setup-2fa', methods=['GET', 'POST'])
+def setup_2fa():
+    user = db.session.get(User, session['user_id'])
+    if user.two_factor_secret:
+        flash('Two-factor authentication is already enabled', 'info')
+        return redirect(url_for('settings'))
+
+    modal = request.args.get('modal')
+
+    secret = session.get('tmp_2fa_secret')
+    if not secret:
+        secret = generate_totp_secret()
+        session['tmp_2fa_secret'] = secret
+
+    error = None
+    if request.method == 'POST':
+        token = request.form.get('token')
+        if secret and verify_totp(secret, token):
+            user.two_factor_secret = secret
+            db.session.commit()
+            session.pop('tmp_2fa_secret', None)
+            flash('Two-factor authentication enabled', 'success')
+            if modal:
+                return jsonify(success=True)
+            return redirect(url_for('settings'))
+        error = 'Invalid authentication code'
+
+    otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
+    qr_data = None
+    try:
+        import qrcode
+        from qrcode.image.styledpil import StyledPilImage
+        from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
+        from qrcode.image.styles.colormasks import RadialGradiantColorMask
+
+        qr = qrcode.QRCode(
+            error_correction=qrcode.constants.ERROR_CORRECT_Q,
+            box_size=8,
+            border=1,
+        )
+        qr.add_data(otpauth)
+        qr.make(fit=True)
+        img = qr.make_image(
+            image_factory=StyledPilImage,
+            module_drawer=RoundedModuleDrawer(),
+            color_mask=RadialGradiantColorMask(),
+        )
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        qr_data = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    except ModuleNotFoundError:
+        pass
+
+    template = 'setup_2fa_inner.html' if modal else 'setup_2fa.html'
+    return render_template(template, secret=secret, qr_data=qr_data, error=error)
+
+
+@app.route('/disable-2fa', methods=['POST'])
+def disable_2fa():
+    user = db.session.get(User, session['user_id'])
+    user.two_factor_secret = None
+    db.session.commit()
+    flash('Two-factor authentication disabled', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    user = db.session.get(User, session['user_id'])
+    tz_list = sorted(available_timezones())
+    if not user.timezone:
+        tzinfo = datetime.now().astimezone().tzinfo
+        user.timezone = getattr(tzinfo, 'key', tzinfo.tzname(None) or 'UTC')
+        db.session.commit()
+    if request.method == 'POST':
+        section = request.form.get('section')
+        if section == 'profile':
+            user.full_name = request.form.get('full_name')
+            user.username = request.form.get('username')
+            email = request.form.get('email')
+            user.email = email or None
+            if 'profile_picture' in request.files:
+                file = request.files['profile_picture']
+                if file and file.filename:
+                    os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
+                    filename = secure_filename(file.filename)
+                    path = os.path.join('static', 'uploads', filename)
+                    file.save(path)
+                    user.profile_picture = path
+        elif section == 'units':
+            user.timezone = request.form.get('timezone')
+            user.temperature_unit = request.form.get('temperature_unit')
+            user.weight_unit = request.form.get('weight_unit')
+
+        db.session.commit()
+        flash('Settings updated successfully', 'success')
+        return redirect(url_for('settings'))
+
+    return render_template('settings.html', user=user, timezones=tz_list, active_page='settings')
 
 class Apiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -273,6 +447,13 @@ class Queen(db.Model):
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    full_name = db.Column(db.String(120))
+    email = db.Column(db.String(120))
+    timezone = db.Column(db.String(50))
+    temperature_unit = db.Column(db.String(10))
+    weight_unit = db.Column(db.String(10))
+    profile_picture = db.Column(db.String(200))
+    two_factor_secret = db.Column(db.String(32))
     password_hash = db.Column(db.String(200), nullable=False)
 
     def set_password(self, password):
@@ -289,7 +470,7 @@ def inject_sidebar_apiaries():
 @app.context_processor
 def inject_current_user():
     if 'user_id' in session:
-        user = User.query.get(session['user_id'])
+        user = db.session.get(User, session['user_id'])
         return {'current_user': user}
     return {}
 
