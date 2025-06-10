@@ -337,15 +337,15 @@ def setup_2fa():
         session['tmp_2fa_secret'] = secret
 
     otpauth = f"otpauth://totp/Hiverr:{user.username}?secret={secret}&issuer=Hiverr"
+    qr_data = None
     try:
         import qrcode
+        img = qrcode.make(otpauth)
+        buf = BytesIO()
+        img.save(buf, format='PNG')
+        qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
     except ModuleNotFoundError:
-        flash('qrcode package not installed', 'danger')
-        return redirect(url_for('settings'))
-    img = qrcode.make(otpauth)
-    buf = BytesIO()
-    img.save(buf, format='PNG')
-    qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+        flash('Install qrcode[pil] to display a QR code', 'warning')
 
     return render_template('setup_2fa.html', secret=secret, qr_data=qr_data)
 

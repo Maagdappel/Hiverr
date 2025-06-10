@@ -4,7 +4,11 @@
 <h1 class="mb-4">Enable Two-Factor Authentication</h1>
 <p>Scan the QR code or enter the secret in your authenticator app. Then enter the six-digit code below to confirm.</p>
 <div class="mb-3">
+  {% if qr_data %}
   <img src="{{ qr_data }}" alt="QR Code" class="mb-3" />
+  {% else %}
+  <p class="text-warning">QR code not available. Enter the secret manually.</p>
+  {% endif %}
   <pre>{{ secret }}</pre>
 </div>
 <form method="post" class="w-50" id="verify-form">
