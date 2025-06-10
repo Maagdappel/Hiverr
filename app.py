@@ -1,13 +1,57 @@
 from flask import Flask, render_template
-from flask import request, redirect, url_for, flash
+from flask import request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 import os
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hiverr.db'
 db = SQLAlchemy(app)
+@app.before_request
+def require_login():
+    allowed_endpoints = {'login', 'register', 'static'}
+    if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
+        return redirect(url_for('login'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            return redirect(url_for('index'))
+        flash('Invalid credentials', 'danger')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'danger')
+        else:
+            new_user = User(username=username)
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('User created, please log in.', 'success')
+            return redirect(url_for('login'))
+    return render_template('register.html')
 
 @app.route('/')
 def index():
@@ -226,9 +270,30 @@ class Queen(db.Model):
     def __repr__(self):
         return f'<Queen {self.name}>'
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 @app.context_processor
 def inject_sidebar_apiaries():
     return {'sidebar_apiaries': Apiary.query.all()}
 
+
+@app.context_processor
+def inject_current_user():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        return {'current_user': user}
+    return {}
+
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=80)

@@ -159,6 +159,12 @@
             <button class="btn btn-outline-secondary w-100" id="theme-toggle" title="Toggle theme">
                 <i class="mdi mdi-moon-waning-crescent"></i>
             </button>
+            {% if current_user %}
+            <div class="text-white mt-3 text-center small">
+                {{ current_user.username }} |
+                <a href="{{ url_for('logout') }}" class="link-light">Log out</a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
