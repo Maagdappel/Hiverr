@@ -48,6 +48,9 @@
             padding: 8px 15px 8px 30px;
             transition: background-color 0.2s ease, color 0.2s ease;
         }
+        .sidebar-sublink i {
+            margin-right: 8px;
+        }
         .sidebar-sublink:hover {
             background-color: #495057;
             color: white;
@@ -87,7 +90,7 @@
           <div class="accordion-item bg-dark border-0">
             <h2 class="accordion-header" id="heading{{ apiary.id }}">
               <button class="accordion-button collapsed bg-dark text-white py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ apiary.id }}" aria-expanded="false" aria-controls="collapse{{ apiary.id }}">
-                {{ apiary.name }}
+                <i class="mdi mdi-forest me-2"></i>{{ apiary.name }}
               </button>
             </h2>
             <div id="collapse{{ apiary.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ apiary.id }}" data-bs-parent="#apiarySidebar">
@@ -96,14 +99,7 @@
                 <ul class="list-unstyled">
                   {% for hive in apiary.hives %}
                   <li>
-                    <a href="/edit-hive/{{ hive.id }}" class="sidebar-sublink">{{ hive.name }}</a>
-                    {% if hive.queens %}
-                    <ul class="list-unstyled">
-                      {% for queen in hive.queens %}
-                      <li><a href="/edit-queen/{{ queen.id }}" class="sidebar-sublink">{{ queen.name }}</a></li>
-                      {% endfor %}
-                    </ul>
-                    {% endif %}
+                    <a href="/edit-hive/{{ hive.id }}" class="sidebar-sublink"><i class="mdi mdi-beehive-outline"></i>{{ hive.name }}</a>
                   </li>
                   {% endfor %}
                 </ul>
