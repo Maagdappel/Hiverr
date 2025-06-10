@@ -55,6 +55,36 @@
             background-color: #495057;
             color: white;
         }
+        .sidebar-accordion-button {
+            background-color: #343a40;
+            color: #adb5bd;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            border: none;
+            box-shadow: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .sidebar-accordion-button::after {
+            display: none;
+        }
+        .sidebar-accordion-button:hover {
+            background-color: #fdcc38;
+            color: black;
+        }
+        .sidebar-accordion-button:not(.collapsed) {
+            background-color: #fdcc38;
+            color: black;
+            font-weight: bold;
+        }
+        .sidebar-accordion-button .arrow-icon {
+            margin-right: 6px;
+            transition: transform 0.2s ease;
+        }
+        .sidebar-accordion-button:not(.collapsed) .arrow-icon {
+            transform: rotate(90deg);
+        }
         .content {
             flex-grow: 1;
             padding: 20px;
@@ -91,7 +121,8 @@
           {% for apiary in sidebar_apiaries %}
           <div class="accordion-item bg-dark border-0">
             <h2 class="accordion-header" id="heading{{ apiary.id }}">
-              <button class="accordion-button collapsed bg-dark text-white py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ apiary.id }}" aria-expanded="false" aria-controls="collapse{{ apiary.id }}">
+              <button class="accordion-button sidebar-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ apiary.id }}" aria-expanded="false" aria-controls="collapse{{ apiary.id }}">
+                <i class="mdi mdi-chevron-right arrow-icon"></i>
                 <i class="mdi mdi-forest me-2"></i>{{ apiary.name }}
               </button>
             </h2>
