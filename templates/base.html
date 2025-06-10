@@ -160,10 +160,10 @@
                 <i class="mdi mdi-moon-waning-crescent"></i>
             </button>
             {% if current_user %}
-            <div class="text-white mt-3 text-center small">
-                {{ current_user.username }} |
-                <a href="{{ url_for('logout') }}" class="link-light">Log out</a>
-            </div>
+            <div class="text-white mt-3 text-center small">Hi {{ current_user.username }}!</div>
+            <form action="{{ url_for('logout') }}" method="post" onsubmit="return confirm('Are you sure you want to log out?');" class="mt-2">
+                <button type="submit" class="btn btn-danger btn-sm w-100">Log out</button>
+            </form>
             {% endif %}
         </div>
     </div>
