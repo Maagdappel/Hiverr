@@ -19,7 +19,18 @@
       </div>
       <div class="mb-3">
         <label for="password" class="form-label">Password</label>
-        <input type="password" class="form-control" id="password" name="password" required>
+        <div class="input-group">
+          <input type="password" class="form-control" id="password" name="password" required>
+          <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="password"><i class="fa fa-eye"></i></button>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="confirm" class="form-label">Confirm Password</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="confirm" required>
+          <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="confirm"><i class="fa fa-eye"></i></button>
+        </div>
+        <div id="match-msg" class="form-text"></div>
       </div>
       <div class="mb-3">
         <label for="profile_picture" class="form-label">Profile Picture (optional)</label>
@@ -37,21 +48,12 @@
         <pre class="text-center">{{ secret }}</pre>
         <div class="mb-3">
           <label for="token" class="form-label">Authentication Code</label>
-          <input type="text" class="form-control" id="token" name="token">
+          <div class="input-group">
+            <input type="text" class="form-control" id="token" name="token">
+            <button type="button" class="btn btn-outline-primary" id="verify-2fa">Verify</button>
+          </div>
+          <div id="verify-msg" class="form-text"></div>
         </div>
-      </div>
-      <h5 class="mt-4">Optional: Initial Setup</h5>
-      <div class="mb-3">
-        <label for="apiary_name" class="form-label">Apiary Name</label>
-        <input type="text" class="form-control" id="apiary_name" name="apiary_name">
-      </div>
-      <div class="mb-3">
-        <label for="hive_name" class="form-label">Hive Name</label>
-        <input type="text" class="form-control" id="hive_name" name="hive_name">
-      </div>
-      <div class="mb-3">
-        <label for="queen_name" class="form-label">Queen Name</label>
-        <input type="text" class="form-control" id="queen_name" name="queen_name">
       </div>
       <button type="submit" class="btn btn-primary w-100">Create Administrator</button>
     </form>
@@ -63,6 +65,61 @@ const section = document.getElementById('twofa-section');
 if(cb){
   cb.addEventListener('change', ()=>{
     section.classList.toggle('d-none', !cb.checked);
+  });
+}
+
+document.querySelectorAll('.toggle-pass').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.target);
+    if(input.type === 'password'){
+      input.type = 'text';
+      btn.innerHTML = '<i class="fa fa-eye-slash"></i>';
+    }else{
+      input.type = 'password';
+      btn.innerHTML = '<i class="fa fa-eye"></i>';
+    }
+  });
+});
+
+const pass = document.getElementById('password');
+const confirmP = document.getElementById('confirm');
+const msg = document.getElementById('match-msg');
+const submitBtn = document.querySelector('form button[type="submit"]');
+function checkMatch(){
+  if(pass.value && confirmP.value && pass.value === confirmP.value){
+    msg.textContent = 'Passwords match';
+    msg.className = 'form-text text-success';
+    submitBtn.disabled = false;
+  }else{
+    msg.textContent = 'Passwords do not match';
+    msg.className = 'form-text text-danger';
+    submitBtn.disabled = true;
+  }
+}
+if(pass&&confirmP){
+  pass.addEventListener('input', checkMatch);
+  confirmP.addEventListener('input', checkMatch);
+  checkMatch();
+}
+
+const verifyBtn = document.getElementById('verify-2fa');
+if(verifyBtn){
+  verifyBtn.addEventListener('click', ()=>{
+    const token = document.getElementById('token').value;
+    fetch('{{ url_for('setup_admin_verify_2fa') }}', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'token='+encodeURIComponent(token)
+    }).then(r=>r.json()).then(data=>{
+      const vm = document.getElementById('verify-msg');
+      if(data.ok){
+        vm.textContent = 'Two-factor saved';
+        vm.className = 'form-text text-success';
+      }else{
+        vm.textContent = 'Invalid code';
+        vm.className = 'form-text text-danger';
+      }
+    });
   });
 }
 </script>

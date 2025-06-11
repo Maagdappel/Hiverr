@@ -49,11 +49,14 @@ def verify_totp(secret, token):
 @app.before_request
 def require_login():
     if User.query.count() == 0:
-        allowed = {'static', 'setup_admin'}
+        allowed = {'static', 'setup_admin', 'setup_admin_verify_2fa'}
         if request.endpoint not in allowed:
             return redirect(url_for('setup_admin'))
     else:
-        allowed_endpoints = {'login', 'register', 'static', 'two_factor', 'setup_admin'}
+        allowed_endpoints = {
+            'login', 'register', 'static', 'two_factor',
+            'setup_admin', 'setup_admin_verify_2fa', 'setup_apiary'
+        }
         if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
             return redirect(url_for('login'))
 
@@ -166,15 +169,45 @@ def setup_admin():
                 file.save(path)
                 user.profile_picture = path
 
-        if enable2fa and token:
-            if verify_totp(secret, token):
+        if enable2fa:
+            if session.get('twofa_verified') or (token and verify_totp(secret, token)):
                 user.two_factor_secret = secret
             else:
                 flash('Invalid authentication code', 'danger')
                 return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
 
         db.session.add(user)
+        db.session.commit()
+        session.pop('setup_2fa_secret', None)
+        session.pop('twofa_verified', None)
+        flash('Administrator account created', 'success')
+        session['user_id'] = user.id
+        session['username'] = user.username
+        return redirect(url_for('setup_apiary'))
 
+    return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
+
+
+@app.route('/setup-admin/verify-2fa', methods=['POST'])
+def setup_admin_verify_2fa():
+    if User.query.count() > 0:
+        return jsonify({'error': 'closed'}), 400
+
+    secret = session.get('setup_2fa_secret')
+    token = request.form.get('token')
+    if not secret or not token:
+        return jsonify({'error': 'missing'}), 400
+    if verify_totp(secret, token):
+        session['twofa_verified'] = True
+        return jsonify({'ok': True})
+    return jsonify({'error': 'invalid'}), 400
+
+
+@app.route('/setup-apiary', methods=['GET', 'POST'])
+def setup_apiary():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
         apiary_name = request.form.get('apiary_name')
         hive_name = request.form.get('hive_name')
         queen_name = request.form.get('queen_name')
@@ -194,13 +227,10 @@ def setup_admin():
             db.session.add(queen)
 
         db.session.commit()
-        session.pop('setup_2fa_secret', None)
-        flash('Administrator account created', 'success')
-        session['user_id'] = user.id
-        session['username'] = user.username
+        flash('Setup complete!', 'success')
         return redirect(url_for('index'))
 
-    return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
+    return render_template('setup_apiary.html')
 
 @app.route('/')
 def index():
