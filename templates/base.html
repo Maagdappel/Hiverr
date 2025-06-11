@@ -116,7 +116,7 @@
           <i class="mdi mdi-home"></i> Dashboard
         </a>
         <a href="/apiaries" class="sidebar-link {% if active_page == 'apiaries' %}active{% endif %}">
-            <i class="mdi mdi-forest"></i> Apiaries
+            <i class="mdi mdi-map-marker-multiple-outline"></i> Apiaries
         </a>
         <a href="/hives" class="sidebar-link {% if active_page == 'hives' %}active{% endif %}">
             <i class="mdi mdi-beehive-outline"></i> Hives
@@ -133,7 +133,7 @@
             <h2 class="accordion-header" id="heading{{ apiary.id }}">
               <button class="accordion-button sidebar-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ apiary.id }}" aria-expanded="false" aria-controls="collapse{{ apiary.id }}">
                 <i class="mdi mdi-chevron-right arrow-icon"></i>
-                <i class="mdi mdi-forest me-2"></i>{{ apiary.name }}
+                <i class="mdi mdi-map-marker-outline me-2"></i>{{ apiary.name }}
               </button>
             </h2>
             <div id="collapse{{ apiary.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ apiary.id }}" data-bs-parent="#apiarySidebar">
@@ -171,7 +171,9 @@
                 {% endif %}
                 <span class="text-white small">Hi {{ current_user.username }}!</span>
             </div>
-            <button type="button" class="btn btn-danger btn-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#logoutModal">Log out</button>
+            <button type="button" class="btn btn-danger btn-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                <i class="mdi mdi-logout me-1"></i> Log out
+            </button>
             {% endif %}
         </div>
     </div>
@@ -204,7 +206,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Log out</button>
+                    <button type="submit" class="btn btn-danger"><i class="mdi mdi-logout me-1"></i> Log out</button>
                 </div>
             </form>
         </div>
