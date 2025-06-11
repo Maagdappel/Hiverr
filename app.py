@@ -48,9 +48,14 @@ def verify_totp(secret, token):
     return False
 @app.before_request
 def require_login():
-    allowed_endpoints = {'login', 'register', 'static', 'two_factor'}
-    if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
-        return redirect(url_for('login'))
+    if User.query.count() == 0:
+        allowed = {'static', 'setup_admin'}
+        if request.endpoint not in allowed:
+            return redirect(url_for('setup_admin'))
+    else:
+        allowed_endpoints = {'login', 'register', 'static', 'two_factor', 'setup_admin'}
+        if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
+            return redirect(url_for('login'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -95,6 +100,9 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if User.query.count() > 0:
+        flash('Registration is closed.', 'danger')
+        return redirect(url_for('login'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -108,6 +116,91 @@ def register():
             flash('User created, please log in.', 'success')
             return redirect(url_for('login'))
     return render_template('register.html')
+
+
+@app.route('/setup-admin', methods=['GET', 'POST'])
+def setup_admin():
+    if User.query.count() > 0:
+        return redirect(url_for('login'))
+
+    secret = session.get('setup_2fa_secret')
+    if not secret:
+        secret = generate_totp_secret()
+        session['setup_2fa_secret'] = secret
+
+    qr_data = None
+    try:
+        import qrcode
+        from qrcode.image.styledpil import StyledPilImage
+        from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
+        from qrcode.image.styles.colormasks import RadialGradiantColorMask
+
+        otpauth = f"otpauth://totp/Hiverr:admin?secret={secret}&issuer=Hiverr"
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_Q, box_size=8, border=1)
+        qr.add_data(otpauth)
+        qr.make(fit=True)
+        img = qr.make_image(image_factory=StyledPilImage, module_drawer=RoundedModuleDrawer(), color_mask=RadialGradiantColorMask())
+        buf = BytesIO()
+        img.save(buf, format='PNG')
+        qr_data = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+    except ModuleNotFoundError:
+        pass
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        full_name = request.form.get('full_name')
+        email = request.form.get('email') or None
+        enable2fa = request.form.get('enable2fa')
+        token = request.form.get('token')
+
+        user = User(username=username, full_name=full_name, email=email, role='admin')
+        user.set_password(password)
+
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and file.filename:
+                os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
+                filename = secure_filename(file.filename)
+                path = os.path.join('static', 'uploads', filename)
+                file.save(path)
+                user.profile_picture = path
+
+        if enable2fa and token:
+            if verify_totp(secret, token):
+                user.two_factor_secret = secret
+            else:
+                flash('Invalid authentication code', 'danger')
+                return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
+
+        db.session.add(user)
+
+        apiary_name = request.form.get('apiary_name')
+        hive_name = request.form.get('hive_name')
+        queen_name = request.form.get('queen_name')
+
+        apiary = None
+        if apiary_name:
+            apiary = Apiary(name=apiary_name)
+            db.session.add(apiary)
+
+        hive = None
+        if hive_name and apiary:
+            hive = Hive(name=hive_name, apiary=apiary)
+            db.session.add(hive)
+
+        if queen_name and hive:
+            queen = Queen(name=queen_name, hive=hive)
+            db.session.add(queen)
+
+        db.session.commit()
+        session.pop('setup_2fa_secret', None)
+        flash('Administrator account created', 'success')
+        session['user_id'] = user.id
+        session['username'] = user.username
+        return redirect(url_for('index'))
+
+    return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
 
 @app.route('/')
 def index():
@@ -449,6 +542,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     full_name = db.Column(db.String(120))
     email = db.Column(db.String(120))
+    role = db.Column(db.String(20), default='user')
     timezone = db.Column(db.String(50))
     temperature_unit = db.Column(db.String(10))
     weight_unit = db.Column(db.String(10))
