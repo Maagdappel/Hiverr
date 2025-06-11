@@ -11,7 +11,7 @@
         Profile
       </button>
     </h2>
-    <div id="collapseProfile" class="accordion-collapse collapse" data-bs-parent="#settingsAcc">
+    <div id="collapseProfile" class="accordion-collapse collapse {% if request.args.get('open') == 'profile' %}show{% endif %}" data-bs-parent="#settingsAcc">
       <div class="accordion-body">
         <form method="POST" enctype="multipart/form-data">
           <input type="hidden" name="section" value="profile">
@@ -42,7 +42,7 @@
         Units &amp; Timezone
       </button>
     </h2>
-    <div id="collapseUnits" class="accordion-collapse collapse" data-bs-parent="#settingsAcc">
+    <div id="collapseUnits" class="accordion-collapse collapse {% if request.args.get('open') == 'units' %}show{% endif %}" data-bs-parent="#settingsAcc">
       <div class="accordion-body">
         <form method="POST">
           <input type="hidden" name="section" value="units">
@@ -79,9 +79,12 @@
         Security
       </button>
     </h2>
-    <div id="collapseSecurity" class="accordion-collapse collapse" data-bs-parent="#settingsAcc">
+    <div id="collapseSecurity" class="accordion-collapse collapse {% if request.args.get('open') == 'security' %}show{% endif %}" data-bs-parent="#settingsAcc">
       <div class="accordion-body">
+        <h5>Change Password</h5>
         <a href="{{ url_for('change_password') }}" class="btn btn-secondary mb-3">Change Password</a>
+        <hr class="my-4">
+        <h5>Two-Factor Authentication</h5>
         {% if user.two_factor_secret %}
           <p>Two-factor authentication is enabled.</p>
           <form method="post" action="{{ url_for('disable_2fa') }}" class="d-inline">

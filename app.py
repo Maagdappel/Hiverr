@@ -467,7 +467,7 @@ def change_password():
         user.set_password(new_password)
         db.session.commit()
         flash('Password updated successfully', 'success')
-        return redirect(url_for('settings'))
+        return redirect(url_for('settings', open='security'))
     return render_template('change_password.html', active_page='settings')
 
 
@@ -534,7 +534,7 @@ def disable_2fa():
     user.two_factor_secret = None
     db.session.commit()
     flash('Two-factor authentication disabled', 'success')
-    return redirect(url_for('settings'))
+    return redirect(url_for('settings', open='security'))
 
 
 @app.route('/toggle-registration', methods=['POST'])
@@ -551,7 +551,7 @@ def toggle_registration():
     db.session.commit()
     msg = 'User registration enabled' if enable else 'User registration disabled'
     flash(msg, 'success')
-    return redirect(url_for('settings'))
+    return redirect(url_for('settings', open='security'))
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
@@ -583,7 +583,7 @@ def settings():
 
         db.session.commit()
         flash('Settings updated successfully', 'success')
-        return redirect(url_for('settings'))
+        return redirect(url_for('settings', open=section))
 
     return render_template('settings.html', user=user, timezones=tz_list, active_page='settings')
 
