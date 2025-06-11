@@ -23,11 +23,12 @@
           <input type="password" class="form-control" id="password" name="password" required>
           <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="password"><i class="fa fa-eye"></i></button>
         </div>
+        <div id="strength-msg" class="form-text"></div>
       </div>
       <div class="mb-3">
         <label for="confirm" class="form-label">Confirm Password</label>
         <div class="input-group">
-          <input type="password" class="form-control" id="confirm" required>
+          <input type="password" class="form-control" id="confirm" name="confirm" required>
           <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="confirm"><i class="fa fa-eye"></i></button>
         </div>
         <div id="match-msg" class="form-text"></div>
@@ -84,22 +85,31 @@ document.querySelectorAll('.toggle-pass').forEach(btn=>{
 const pass = document.getElementById('password');
 const confirmP = document.getElementById('confirm');
 const msg = document.getElementById('match-msg');
+const strength = document.getElementById('strength-msg');
 const submitBtn = document.querySelector('form button[type="submit"]');
-function checkMatch(){
+const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+function validate(){
+  const strong = regex.test(pass.value);
+  if(strong){
+    strength.textContent = 'Looks good';
+    strength.className = 'form-text text-success';
+  }else{
+    strength.textContent = 'Min 8 chars with upper, lower and special';
+    strength.className = 'form-text text-danger';
+  }
   if(pass.value && confirmP.value && pass.value === confirmP.value){
     msg.textContent = 'Passwords match';
     msg.className = 'form-text text-success';
-    submitBtn.disabled = false;
   }else{
     msg.textContent = 'Passwords do not match';
     msg.className = 'form-text text-danger';
-    submitBtn.disabled = true;
   }
+  submitBtn.disabled = !(strong && pass.value === confirmP.value);
 }
 if(pass&&confirmP){
-  pass.addEventListener('input', checkMatch);
-  confirmP.addEventListener('input', checkMatch);
-  checkMatch();
+  pass.addEventListener('input', validate);
+  confirmP.addEventListener('input', validate);
+  validate();
 }
 
 const verifyBtn = document.getElementById('verify-2fa');

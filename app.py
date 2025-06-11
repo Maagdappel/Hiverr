@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify
-from flask import request, redirect, url_for, flash, session
+from flask import request, redirect, url_for, flash, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,6 +13,7 @@ import hashlib
 import struct
 import time
 from io import BytesIO
+import re
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -46,6 +47,24 @@ def verify_totp(secret, token):
         if token == expected:
             return True
     return False
+
+
+def password_valid(password: str) -> bool:
+    """Check password strength: 8+ chars, lower, upper and special."""
+    if len(password) < 8:
+        return False
+    if not re.search(r'[a-z]', password):
+        return False
+    if not re.search(r'[A-Z]', password):
+        return False
+    if not re.search(r'[^a-zA-Z0-9]', password):
+        return False
+    return True
+
+
+def registration_enabled() -> bool:
+    cfg = db.session.get(Config, 'registration_enabled')
+    return bool(cfg and cfg.value == '1')
 @app.before_request
 def require_login():
     if User.query.count() == 0:
@@ -103,12 +122,15 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if User.query.count() > 0:
+    if not registration_enabled():
         flash('Registration is closed.', 'danger')
         return redirect(url_for('login'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        if not password_valid(password):
+            flash('Password must be at least 8 characters long and include upper, lower and special characters.', 'danger')
+            return redirect(url_for('register'))
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'danger')
         else:
@@ -152,10 +174,18 @@ def setup_admin():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        confirm = request.form.get('confirm')
         full_name = request.form.get('full_name')
         email = request.form.get('email') or None
         enable2fa = request.form.get('enable2fa')
         token = request.form.get('token')
+
+        if not password_valid(password):
+            flash('Password must be at least 8 characters long and include upper, lower and special characters.', 'danger')
+            return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
+        if password != confirm:
+            flash('Passwords do not match', 'danger')
+            return render_template('setup_admin.html', secret=secret, qr_data=qr_data)
 
         user = User(username=username, full_name=full_name, email=email, role='admin')
         user.set_password(password)
@@ -428,6 +458,9 @@ def change_password():
         if not new_password:
             flash('Password cannot be empty', 'danger')
             return redirect(url_for('change_password'))
+        if not password_valid(new_password):
+            flash('Password must be at least 8 characters long and include upper, lower and special characters.', 'danger')
+            return redirect(url_for('change_password'))
         if new_password != confirm_password:
             flash('Passwords do not match', 'danger')
             return redirect(url_for('change_password'))
@@ -503,6 +536,21 @@ def disable_2fa():
     flash('Two-factor authentication disabled', 'success')
     return redirect(url_for('settings'))
 
+
+@app.route('/enable-registration', methods=['POST'])
+def enable_registration():
+    user = db.session.get(User, session['user_id'])
+    if user.role != 'admin':
+        abort(403)
+    cfg = db.session.get(Config, 'registration_enabled')
+    if cfg:
+        cfg.value = '1'
+    else:
+        db.session.add(Config(key='registration_enabled', value='1'))
+    db.session.commit()
+    flash('User registration enabled', 'success')
+    return redirect(url_for('settings'))
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     user = db.session.get(User, session['user_id'])
@@ -536,6 +584,11 @@ def settings():
         return redirect(url_for('settings'))
 
     return render_template('settings.html', user=user, timezones=tz_list, active_page='settings')
+
+class Config(db.Model):
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(200))
+
 
 class Apiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -597,6 +650,11 @@ def inject_current_user():
         user = db.session.get(User, session['user_id'])
         return {'current_user': user}
     return {}
+
+
+@app.context_processor
+def inject_registration_flag():
+    return {'registration_enabled': registration_enabled()}
 
 if __name__ == '__main__':
     with app.app_context():

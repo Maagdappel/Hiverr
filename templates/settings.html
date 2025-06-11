@@ -91,6 +91,13 @@
           <p>Two-factor authentication is disabled.</p>
           <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" id="enable-2fa-btn" data-bs-toggle="modal" data-bs-target="#setup2FAModal">Enable 2FA</a>
         {% endif %}
+        {% if not registration_enabled %}
+          <form method="post" action="{{ url_for('enable_registration') }}" class="mt-3">
+            <button type="submit" class="btn btn-warning">Enable Registration</button>
+          </form>
+        {% else %}
+          <p class="mt-3">Registration is enabled.</p>
+        {% endif %}
       </div>
     </div>
   </div>
