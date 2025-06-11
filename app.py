@@ -537,18 +537,20 @@ def disable_2fa():
     return redirect(url_for('settings'))
 
 
-@app.route('/enable-registration', methods=['POST'])
-def enable_registration():
+@app.route('/toggle-registration', methods=['POST'])
+def toggle_registration():
     user = db.session.get(User, session['user_id'])
     if user.role != 'admin':
         abort(403)
+    enable = 'enable' in request.form
     cfg = db.session.get(Config, 'registration_enabled')
-    if cfg:
-        cfg.value = '1'
-    else:
-        db.session.add(Config(key='registration_enabled', value='1'))
+    if not cfg:
+        cfg = Config(key='registration_enabled', value='0')
+        db.session.add(cfg)
+    cfg.value = '1' if enable else '0'
     db.session.commit()
-    flash('User registration enabled', 'success')
+    msg = 'User registration enabled' if enable else 'User registration disabled'
+    flash(msg, 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings', methods=['GET', 'POST'])

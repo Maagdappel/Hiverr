@@ -23,7 +23,7 @@
           <input type="password" class="form-control" id="password" name="password" required>
           <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="password"><i class="fa fa-eye"></i></button>
         </div>
-        <div id="strength-msg" class="form-text"></div>
+        <div id="strength-msg" class="form-text">Password must be at least 8 characters long and include one lowercase, one uppercase and one special character.</div>
       </div>
       <div class="mb-3">
         <label for="confirm" class="form-label">Confirm Password</label>
@@ -91,10 +91,10 @@ const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
 function validate(){
   const strong = regex.test(pass.value);
   if(strong){
-    strength.textContent = 'Looks good';
+    strength.textContent = 'This password looks good';
     strength.className = 'form-text text-success';
   }else{
-    strength.textContent = 'Min 8 chars with upper, lower and special';
+    strength.textContent = 'Password must be at least 8 characters long and include one lowercase, one uppercase and one special character.';
     strength.className = 'form-text text-danger';
   }
   if(pass.value && confirmP.value && pass.value === confirmP.value){
