@@ -610,6 +610,30 @@ def create_user():
     flash('User created successfully', 'success')
     return redirect(url_for('settings', open='users'))
 
+
+@app.route('/delete-user/<int:id>', methods=['POST'])
+def delete_user(id):
+    admin = db.session.get(User, session['user_id'])
+    if admin.role != 'admin':
+        abort(403)
+    if admin.id == id:
+        flash("You cannot delete your own account", 'danger')
+        return redirect(url_for('settings', open='users'))
+    user = db.session.get(User, id)
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('settings', open='users'))
+    for queen in list(user.queens):
+        db.session.delete(queen)
+    for hive in list(user.hives):
+        db.session.delete(hive)
+    for apiary in list(user.apiaries):
+        db.session.delete(apiary)
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted', 'success')
+    return redirect(url_for('settings', open='users'))
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     user = db.session.get(User, session['user_id'])

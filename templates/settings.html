@@ -145,7 +145,7 @@
         <h6 class="mb-2">All Users</h6>
         <table class="table table-sm">
           <thead>
-            <tr><th>User</th><th>Role</th></tr>
+            <tr><th>User</th><th>Role</th><th></th></tr>
           </thead>
           <tbody>
           {% for u in users %}
@@ -159,6 +159,13 @@
                 {{ u.username }}
               </td>
               <td>{{ u.role }}</td>
+              <td>
+                {% if current_user.id != u.id %}
+                <form method="post" action="{{ url_for('delete_user', id=u.id) }}" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                  <button type="submit" class="btn btn-link btn-sm text-danger p-0"><i class="mdi mdi-trash-can-outline"></i></button>
+                </form>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
           </tbody>
