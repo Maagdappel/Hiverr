@@ -100,6 +100,13 @@
             --bs-table-hover-bg: var(--bs-secondary-bg);
             --bs-table-hover-color: var(--bs-body-color);
         }
+        .alert-progress {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            height: 4px;
+            transition: width 0.05s linear;
+        }
     </style>
 </head>
 <body>
@@ -168,6 +175,10 @@
             <div class="d-flex align-items-center justify-content-center gap-2 mt-3">
                 {% if current_user.profile_picture %}
                 <img src="/{{ current_user.profile_picture }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">
+                {% else %}
+                <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;">
+                    {{ (current_user.full_name or current_user.username)[0]|upper }}
+                </span>
                 {% endif %}
                 <span class="text-white small">Hi {{ current_user.username }}!</span>
             </div>
@@ -179,17 +190,6 @@
     </div>
 
     <div class="content">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        
         {% block content %}{% endblock %}
     </div>
 
@@ -212,5 +212,12 @@
         </div>
     </div>
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <script>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    showAlert({{ message|tojson }}, "{{ category }}");
+    {% endfor %}
+    {% endwith %}
+    </script>
 </body>
 </html>

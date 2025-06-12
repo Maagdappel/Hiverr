@@ -1,0 +1,136 @@
+{% extends "auth_base.html" %}
+{% block title %}Administrator Setup - Hiverr{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card p-4" style="max-width: 480px;">
+    <h1 class="card-title mb-3 text-center">Create Administrator Account</h1>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="full_name" class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="full_name" name="full_name" required>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email (optional)</label>
+        <input type="email" class="form-control" id="email" name="email">
+      </div>
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="password" name="password" required>
+          <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="password"><i class="fa fa-eye"></i></button>
+        </div>
+        <div id="strength-msg" class="form-text">Password must be at least 8 characters long and include one lowercase, one uppercase and one special character.</div>
+      </div>
+      <div class="mb-3">
+        <label for="confirm" class="form-label">Confirm Password</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="confirm" name="confirm" required>
+          <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="confirm"><i class="fa fa-eye"></i></button>
+        </div>
+        <div id="match-msg" class="form-text"></div>
+      </div>
+      <div class="mb-3">
+        <label for="profile_picture" class="form-label">Profile Picture (optional)</label>
+        <input type="file" class="form-control" id="profile_picture" name="profile_picture">
+      </div>
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" value="1" id="enable2fa" name="enable2fa">
+        <label class="form-check-label" for="enable2fa">Enable Two-Factor Authentication</label>
+      </div>
+      <div id="twofa-section" class="border rounded p-3 mb-3 d-none">
+        <p class="text-center">Scan the QR code or enter the secret below.</p>
+        {% if qr_data %}
+        <img src="{{ qr_data }}" alt="QR" class="d-block mx-auto mb-2" />
+        {% endif %}
+        <pre class="text-center">{{ secret }}</pre>
+        <div class="mb-3">
+          <label for="token" class="form-label">Authentication Code</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="token" name="token">
+            <button type="button" class="btn btn-outline-primary" id="verify-2fa">Verify</button>
+          </div>
+          <div id="verify-msg" class="form-text"></div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Create Administrator</button>
+    </form>
+  </div>
+</div>
+<script>
+const cb = document.getElementById('enable2fa');
+const section = document.getElementById('twofa-section');
+if(cb){
+  cb.addEventListener('change', ()=>{
+    section.classList.toggle('d-none', !cb.checked);
+  });
+}
+
+document.querySelectorAll('.toggle-pass').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.target);
+    if(input.type === 'password'){
+      input.type = 'text';
+      btn.innerHTML = '<i class="fa fa-eye-slash"></i>';
+    }else{
+      input.type = 'password';
+      btn.innerHTML = '<i class="fa fa-eye"></i>';
+    }
+  });
+});
+
+const pass = document.getElementById('password');
+const confirmP = document.getElementById('confirm');
+const msg = document.getElementById('match-msg');
+const strength = document.getElementById('strength-msg');
+const submitBtn = document.querySelector('form button[type="submit"]');
+const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+function validate(){
+  const strong = regex.test(pass.value);
+  if(strong){
+    strength.textContent = 'This password looks good';
+    strength.className = 'form-text text-success';
+  }else{
+    strength.textContent = 'Password must be at least 8 characters long and include one lowercase, one uppercase and one special character.';
+    strength.className = 'form-text text-danger';
+  }
+  if(pass.value && confirmP.value && pass.value === confirmP.value){
+    msg.textContent = 'Passwords match';
+    msg.className = 'form-text text-success';
+  }else{
+    msg.textContent = 'Passwords do not match';
+    msg.className = 'form-text text-danger';
+  }
+  submitBtn.disabled = !(strong && pass.value === confirmP.value);
+}
+if(pass&&confirmP){
+  pass.addEventListener('input', validate);
+  confirmP.addEventListener('input', validate);
+  validate();
+}
+
+const verifyBtn = document.getElementById('verify-2fa');
+if(verifyBtn){
+  verifyBtn.addEventListener('click', ()=>{
+    const token = document.getElementById('token').value;
+    fetch('{{ url_for('setup_admin_verify_2fa') }}', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'token='+encodeURIComponent(token)
+    }).then(r=>r.json()).then(data=>{
+      const vm = document.getElementById('verify-msg');
+      if(data.ok){
+        vm.textContent = 'Two-factor saved';
+        vm.className = 'form-text text-success';
+      }else{
+        vm.textContent = 'Invalid code';
+        vm.className = 'form-text text-danger';
+      }
+    });
+  });
+}
+</script>
+{% endblock %}

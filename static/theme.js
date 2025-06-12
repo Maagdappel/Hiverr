@@ -12,6 +12,53 @@ function setTheme(theme) {
     }
 }
 
+// Display a Bootstrap alert with a progress bar that fades automatically
+window.showAlert = function (message, category = 'success') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'alert alert-dismissible shadow-lg position-relative rounded bg-body-secondary text-body border-0';
+    wrapper.role = 'alert';
+    wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+
+    const progress = document.createElement('div');
+    progress.className = `alert-progress bg-${category}`;
+    progress.style.width = '100%';
+    wrapper.appendChild(progress);
+
+    let container = document.getElementById('alerts');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'alerts';
+        container.className = 'position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '1100';
+        document.body.appendChild(container);
+    }
+    container.appendChild(wrapper);
+
+    const duration = 3000;
+    let remaining = duration;
+    let timer;
+    function startTimer() {
+        timer = setInterval(() => {
+            remaining -= 50;
+            const pct = Math.max(0, remaining / duration * 100);
+            progress.style.width = pct + '%';
+            if (remaining <= 0) {
+                clearInterval(timer);
+                bootstrap.Alert.getOrCreateInstance(wrapper).close();
+            }
+        }, 50);
+    }
+
+    wrapper.addEventListener('mouseenter', () => {
+        clearInterval(timer);
+        remaining = duration;
+        progress.style.width = '100%';
+    });
+    wrapper.addEventListener('mouseleave', () => startTimer());
+
+    startTimer();
+};
+
 document.addEventListener('DOMContentLoaded', function () {
     const saved = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -26,4 +73,6 @@ document.addEventListener('DOMContentLoaded', function () {
             setTheme(next);
         });
     }
+
+    // DOM is ready; nothing to do here for alerts since showAlert is global
 });

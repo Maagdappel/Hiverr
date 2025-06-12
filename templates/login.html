@@ -17,10 +17,12 @@
       </div>
       <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
+    {% if registration_enabled %}
     <div class="text-center mt-3">
       Need an account?
       <a href="{{ url_for('register') }}" class="btn btn-secondary btn-sm ms-1">Register</a>
     </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
