@@ -170,7 +170,7 @@
                 <img src="/{{ current_user.profile_picture }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">
                 {% else %}
                 <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;">
-                    {{ (current_user.full_name or current_user.username)[0] }}
+                    {{ (current_user.full_name or current_user.username)[0]|upper }}
                 </span>
                 {% endif %}
                 <span class="text-white small">Hi {{ current_user.username }}!</span>

@@ -161,7 +161,7 @@
                 {% if u.profile_picture %}
                 <img src="/{{ u.profile_picture }}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
                 {% else %}
-                <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">{{ (u.full_name or u.username)[0] }}</span>
+                <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">{{ (u.full_name or u.username)[0]|upper }}</span>
                 {% endif %}
                 {{ u.username }}
               </td>

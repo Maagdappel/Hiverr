@@ -12,6 +12,27 @@ function setTheme(theme) {
     }
 }
 
+// Display a Bootstrap alert that fades automatically after three seconds
+window.showAlert = function(message, category='success') {
+    const wrapper = document.createElement('div');
+    wrapper.className = `alert alert-${category} alert-dismissible fade show`;
+    wrapper.role = 'alert';
+    wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    let container = document.getElementById('alerts');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'alerts';
+        container.className = 'position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '1100';
+        document.body.appendChild(container);
+    }
+    container.appendChild(wrapper);
+    setTimeout(() => {
+        const alert = bootstrap.Alert.getOrCreateInstance(wrapper);
+        alert.close();
+    }, 3000);
+};
+
 document.addEventListener('DOMContentLoaded', function () {
     const saved = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -27,23 +48,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    window.showAlert = function(message, category='success') {
-        const wrapper = document.createElement('div');
-        wrapper.className = `alert alert-${category} alert-dismissible fade show`;
-        wrapper.role = 'alert';
-        wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-        let container = document.getElementById('alerts');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'alerts';
-            container.className = 'position-fixed bottom-0 end-0 p-3';
-            container.style.zIndex = '1100';
-            document.body.appendChild(container);
-        }
-        container.appendChild(wrapper);
-        setTimeout(() => {
-            const alert = bootstrap.Alert.getOrCreateInstance(wrapper);
-            alert.close();
-        }, 3000);
-    }
+    // DOM is ready; nothing to do here for alerts since showAlert is global
 });
