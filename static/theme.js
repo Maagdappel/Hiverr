@@ -32,6 +32,18 @@ document.addEventListener('DOMContentLoaded', function () {
         wrapper.className = `alert alert-${category} alert-dismissible fade show`;
         wrapper.role = 'alert';
         wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-        document.querySelector('.content')?.prepend(wrapper);
+        let container = document.getElementById('alerts');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'alerts';
+            container.className = 'position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+        container.appendChild(wrapper);
+        setTimeout(() => {
+            const alert = bootstrap.Alert.getOrCreateInstance(wrapper);
+            alert.close();
+        }, 3000);
     }
 });

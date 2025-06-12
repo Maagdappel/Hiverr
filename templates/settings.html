@@ -135,6 +135,13 @@
             <label for="cu_password" class="form-label">Password</label>
             <input type="password" class="form-control" id="cu_password" name="password" required>
           </div>
+          <div class="mb-3">
+            <label for="cu_role" class="form-label">Role</label>
+            <select id="cu_role" name="role" class="form-select">
+              <option value="user" selected>User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
           <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" id="force_change" name="force_change" value="1">
             <label class="form-check-label" for="force_change">Require password change on first login</label>
@@ -161,9 +168,9 @@
               <td>{{ u.role }}</td>
               <td>
                 {% if current_user.id != u.id %}
-                <form method="post" action="{{ url_for('delete_user', id=u.id) }}" class="d-inline" onsubmit="return confirm('Delete this user?');">
-                  <button type="submit" class="btn btn-link btn-sm text-danger p-0"><i class="mdi mdi-trash-can-outline"></i></button>
-                </form>
+                <button type="button" class="btn btn-link btn-sm text-danger p-0 btn-delete-user" data-bs-toggle="modal" data-bs-target="#deleteUserModal" data-url="{{ url_for('delete_user', id=u.id) }}" data-name="{{ u.username }}">
+                  <i class="mdi mdi-trash-can-outline"></i>
+                </button>
                 {% endif %}
               </td>
             </tr>
@@ -174,6 +181,23 @@
     </div>
   </div>
   {% endif %}
+</div>
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" class="modal-content" id="deleteUserForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete <span id="deleteUserName"></span>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Delete</button>
+      </div>
+    </form>
+  </div>
 </div>
 <div class="modal fade" id="setup2FAModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -236,6 +260,13 @@ if(regSwitch){
     });
   });
 }
+
+document.querySelectorAll('.btn-delete-user').forEach(btn=>{
+  btn.addEventListener('click', () => {
+    document.getElementById('deleteUserForm').action = btn.dataset.url;
+    document.getElementById('deleteUserName').textContent = btn.dataset.name;
+  });
+});
 </script>
 {% endblock %}
 

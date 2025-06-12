@@ -596,6 +596,7 @@ def create_user():
     email = request.form.get('email') or None
     username = request.form.get('username')
     password = request.form.get('password')
+    role = request.form.get('role', 'user')
     force_change = request.form.get('force_change') == '1'
     if User.query.filter_by(username=username).first():
         flash('Username already exists', 'danger')
@@ -603,7 +604,9 @@ def create_user():
     if not password_valid(password):
         flash('Password must be at least 8 characters long and include upper, lower and special characters.', 'danger')
         return redirect(url_for('settings', open='users'))
-    new_user = User(username=username, full_name=full_name, email=email, must_change_password=force_change)
+    if role not in ('admin', 'user'):
+        role = 'user'
+    new_user = User(username=username, full_name=full_name, email=email, role=role, must_change_password=force_change)
     new_user.set_password(password)
     db.session.add(new_user)
     db.session.commit()
