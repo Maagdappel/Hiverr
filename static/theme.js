@@ -12,12 +12,18 @@ function setTheme(theme) {
     }
 }
 
-// Display a Bootstrap alert that fades automatically after three seconds
-window.showAlert = function(message, category='success') {
+// Display a Bootstrap alert with a progress bar that fades automatically
+window.showAlert = function (message, category = 'success') {
     const wrapper = document.createElement('div');
-    wrapper.className = `alert alert-${category} alert-dismissible fade show`;
+    wrapper.className = `alert alert-${category} alert-dismissible shadow position-relative`;
     wrapper.role = 'alert';
     wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+
+    const progress = document.createElement('div');
+    progress.className = `alert-progress bg-${category}`;
+    progress.style.width = '100%';
+    wrapper.appendChild(progress);
+
     let container = document.getElementById('alerts');
     if (!container) {
         container = document.createElement('div');
@@ -27,10 +33,26 @@ window.showAlert = function(message, category='success') {
         document.body.appendChild(container);
     }
     container.appendChild(wrapper);
-    setTimeout(() => {
-        const alert = bootstrap.Alert.getOrCreateInstance(wrapper);
-        alert.close();
-    }, 3000);
+
+    const duration = 3000;
+    let remaining = duration;
+    let timer;
+    function startTimer() {
+        timer = setInterval(() => {
+            remaining -= 50;
+            const pct = Math.max(0, remaining / duration * 100);
+            progress.style.width = pct + '%';
+            if (remaining <= 0) {
+                clearInterval(timer);
+                bootstrap.Alert.getOrCreateInstance(wrapper).close();
+            }
+        }, 50);
+    }
+
+    wrapper.addEventListener('mouseenter', () => clearInterval(timer));
+    wrapper.addEventListener('mouseleave', () => startTimer());
+
+    startTimer();
 };
 
 document.addEventListener('DOMContentLoaded', function () {
