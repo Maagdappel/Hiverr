@@ -489,6 +489,9 @@ def change_password():
         if new_password != confirm_password:
             flash('Passwords do not match', 'danger')
             return redirect(url_for('change_password'))
+        if user.check_password(new_password):
+            flash('New password must be different from the old password', 'danger')
+            return redirect(url_for('change_password'))
         user.set_password(new_password)
         user.must_change_password = False
         db.session.commit()
