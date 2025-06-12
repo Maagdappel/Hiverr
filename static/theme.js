@@ -15,7 +15,7 @@ function setTheme(theme) {
 // Display a Bootstrap alert with a progress bar that fades automatically
 window.showAlert = function (message, category = 'success') {
     const wrapper = document.createElement('div');
-    wrapper.className = `alert alert-${category} alert-dismissible shadow position-relative`;
+    wrapper.className = 'alert alert-dismissible shadow position-relative';
     wrapper.role = 'alert';
     wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
 
@@ -49,7 +49,11 @@ window.showAlert = function (message, category = 'success') {
         }, 50);
     }
 
-    wrapper.addEventListener('mouseenter', () => clearInterval(timer));
+    wrapper.addEventListener('mouseenter', () => {
+        clearInterval(timer);
+        remaining = duration;
+        progress.style.width = '100%';
+    });
     wrapper.addEventListener('mouseleave', () => startTimer());
 
     startTimer();
