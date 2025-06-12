@@ -15,7 +15,7 @@ function setTheme(theme) {
 // Display a Bootstrap alert with a progress bar that fades automatically
 window.showAlert = function (message, category = 'success') {
     const wrapper = document.createElement('div');
-    wrapper.className = 'alert alert-dismissible shadow position-relative';
+    wrapper.className = 'alert alert-dismissible shadow position-relative rounded custom-alert';
     wrapper.role = 'alert';
     wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
 
