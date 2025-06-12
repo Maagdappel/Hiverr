@@ -26,4 +26,12 @@ document.addEventListener('DOMContentLoaded', function () {
             setTheme(next);
         });
     }
+
+    window.showAlert = function(message, category='success') {
+        const wrapper = document.createElement('div');
+        wrapper.className = `alert alert-${category} alert-dismissible fade show`;
+        wrapper.role = 'alert';
+        wrapper.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.querySelector('.content')?.prepend(wrapper);
+    }
 });

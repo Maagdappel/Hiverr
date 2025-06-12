@@ -96,13 +96,49 @@
         {% endif %}
         <hr class="my-4">
         <h5>Public Registration</h5>
-        <form method="post" action="{{ url_for('toggle_registration') }}" class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="regSwitch" name="enable" value="1" {% if registration_enabled %}checked{% endif %} onchange="this.form.submit()">
-          <label class="form-check-label" for="regSwitch">Allow anyone to register</label>
+        <form method="post" action="{{ url_for('toggle_registration') }}" class="form-check form-switch" id="regForm">
+          <input class="form-check-input" type="checkbox" id="regSwitch" name="enable" value="1" {% if registration_enabled %}checked{% endif %}>
+      <label class="form-check-label" for="regSwitch">Allow anyone to register</label>
         </form>
       </div>
     </div>
   </div>
+  {% if current_user.role == 'admin' %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingUsers">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsers" aria-expanded="false" aria-controls="collapseUsers">
+        User Management
+      </button>
+    </h2>
+    <div id="collapseUsers" class="accordion-collapse collapse {% if request.args.get('open') == 'users' %}show{% endif %}" data-bs-parent="#settingsAcc">
+      <div class="accordion-body">
+        <form method="post" action="{{ url_for('create_user') }}">
+          <div class="mb-3">
+            <label for="cu_full_name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="cu_full_name" name="full_name" required>
+          </div>
+          <div class="mb-3">
+            <label for="cu_email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="cu_email" name="email">
+          </div>
+          <div class="mb-3">
+            <label for="cu_username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="cu_username" name="username" required>
+          </div>
+          <div class="mb-3">
+            <label for="cu_password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="cu_password" name="password" required>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="force_change" name="force_change" value="1">
+            <label class="form-check-label" for="force_change">Require password change on first login</label>
+          </div>
+          <button type="submit" class="btn btn-primary">Create User</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 <div class="modal fade" id="setup2FAModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -151,6 +187,19 @@ function attachSetupHandlers() {
         }
       });
   }, { once: true });
+}
+
+const regSwitch = document.getElementById('regSwitch');
+if(regSwitch){
+  regSwitch.addEventListener('change', () => {
+    fetch(document.getElementById('regForm').action, {
+      method: 'POST',
+      headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+      body:'enable='+(regSwitch.checked?1:0)
+    }).then(r=>r.json()).then(data=>{
+      showAlert(data.message, 'success');
+    });
+  });
 }
 </script>
 {% endblock %}

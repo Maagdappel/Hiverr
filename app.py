@@ -92,6 +92,9 @@ def login():
                 return redirect(url_for('two_factor'))
             session['user_id'] = user.id
             session['username'] = user.username
+            if user.must_change_password:
+                flash('Please change your password', 'info')
+                return redirect(url_for('change_password'))
             return redirect(url_for('index'))
         flash('Invalid credentials', 'danger')
     return render_template('login.html')
@@ -109,6 +112,9 @@ def two_factor():
             session.pop('pending_user_id')
             session['user_id'] = user.id
             session['username'] = user.username
+            if user.must_change_password:
+                flash('Please change your password', 'info')
+                return redirect(url_for('change_password'))
             return redirect(url_for('index'))
         flash('Invalid authentication code', 'danger')
     return render_template('two_factor.html')
@@ -244,16 +250,16 @@ def setup_apiary():
 
         apiary = None
         if apiary_name:
-            apiary = Apiary(name=apiary_name)
+            apiary = Apiary(name=apiary_name, user_id=session['user_id'])
             db.session.add(apiary)
 
         hive = None
         if hive_name and apiary:
-            hive = Hive(name=hive_name, apiary=apiary)
+            hive = Hive(name=hive_name, apiary=apiary, user_id=session['user_id'])
             db.session.add(hive)
 
         if queen_name and hive:
-            queen = Queen(name=queen_name, hive=hive)
+            queen = Queen(name=queen_name, hive=hive, user_id=session['user_id'])
             db.session.add(queen)
 
         db.session.commit()
@@ -268,12 +274,14 @@ def index():
 
 @app.route('/apiaries')
 def apiaries():
-    apiaries = Apiary.query.all()  # Retrieve all apiaries from the database
+    apiaries = Apiary.query.filter_by(user_id=session['user_id']).all()
     return render_template('apiaries.html', apiaries=apiaries, active_page='apiaries')
 
 @app.route('/edit-apiary/<int:id>', methods=['GET', 'POST'])
 def edit_apiary(id):
     apiary = db.session.get(Apiary, id)  # Fetch the apiary by ID
+    if apiary.user_id != session['user_id']:
+        abort(403)
 
     if request.method == 'POST':
         # Update the apiary with form data
@@ -288,7 +296,9 @@ def edit_apiary(id):
 
 @app.route('/delete-apiary/<int:id>', methods=['GET'])
 def delete_apiary(id):
-    apiary = db.session.get(Apiary, id)  # Fetch the apiary by ID
+    apiary = db.session.get(Apiary, id)
+    if apiary.user_id != session['user_id']:
+        abort(403)
     db.session.delete(apiary)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Apiary: {apiary.name} deleted successfully!", "success")
@@ -303,7 +313,7 @@ def add_apiary():
         location = request.form['location']
 
         # Create a new Apiary object
-        new_apiary = Apiary(name=name, location=location)
+        new_apiary = Apiary(name=name, location=location, user_id=session['user_id'])
 
         # Add to the database
         db.session.add(new_apiary)
@@ -317,12 +327,12 @@ def add_apiary():
 
 @app.route('/hives')
 def hives():
-    hives = Hive.query.all()  # Retrieve all Hives from the database
+    hives = Hive.query.filter_by(user_id=session['user_id']).all()
     return render_template('hives.html', hives=hives, active_page='hives')
 
 @app.route('/add-hive', methods=['GET', 'POST'])
 def add_hive():
-    apiaries = Apiary.query.all()
+    apiaries = Apiary.query.filter_by(user_id=session['user_id']).all()
     if request.method == 'POST':
         if not apiaries:
             flash("You must create an apiary first before adding a hive.", "danger")
@@ -332,7 +342,7 @@ def add_hive():
         apiary_id = request.form['apiary_id']
 
         # Create a new Hive object
-        new_hive = Hive(name=name, apiary_id=apiary_id)
+        new_hive = Hive(name=name, apiary_id=apiary_id, user_id=session['user_id'])
 
         # Add to the database
         db.session.add(new_hive)
@@ -347,7 +357,9 @@ def add_hive():
 @app.route('/edit-hive/<int:id>', methods=['GET', 'POST'])
 def edit_hive(id):
     hive = db.session.get(Hive, id)  # Fetch the hive by ID
-    apiaries = Apiary.query.all() # Get all apiaries
+    if hive.user_id != session['user_id']:
+        abort(403)
+    apiaries = Apiary.query.filter_by(user_id=session['user_id']).all()
 
     if request.method == 'POST':
         # Update the hive with form data
@@ -362,7 +374,9 @@ def edit_hive(id):
 
 @app.route('/delete-hive/<int:id>', methods=['GET'])
 def delete_hive(id):
-    hive = db.session.get(Hive, id)  # Fetch the hive by ID
+    hive = db.session.get(Hive, id)
+    if hive.user_id != session['user_id']:
+        abort(403)
     db.session.delete(hive)  # Delete it from the session
     db.session.commit()  # Commit the changes to the database
     flash(f"Hive: {hive.name} deleted successfully!", "success")
@@ -370,12 +384,12 @@ def delete_hive(id):
 
 @app.route('/queens')
 def queens():
-    queens = Queen.query.all()  # Retrieve all queens from the database
+    queens = Queen.query.filter_by(user_id=session['user_id']).all()
     return render_template('queens.html', queens=queens, active_page='queens')
 
 @app.route('/add-queen', methods=['GET', 'POST'])
 def add_queen():
-    hives = [hive for hive in Hive.query.all() if not hive.queens]
+    hives = [hive for hive in Hive.query.filter_by(user_id=session['user_id']).all() if not hive.queens]
     if request.method == 'POST':
         if not hives:
             flash("You must create a hive first before adding a queen.", "danger")
@@ -391,7 +405,7 @@ def add_queen():
             return redirect(request.url)  # or re-render the template with current data
 
         # Create a new Queen object
-        new_queen = Queen(name=name, breeder=breeder, birth_date=birth_date, hive_id=hive_id)
+        new_queen = Queen(name=name, breeder=breeder, birth_date=birth_date, hive_id=hive_id, user_id=session['user_id'])
 
         # Add to the database
         db.session.add(new_queen)
@@ -407,9 +421,11 @@ def add_queen():
 @app.route('/edit-queen/<int:id>', methods=['GET', 'POST'])
 def edit_queen(id):
     queen = db.session.get(Queen, id)  # Fetch the Queen by ID
+    if queen.user_id != session['user_id']:
+        abort(403)
 
     # Find hives where no queen is currently assigned, include the current hive
-    hives = Hive.query.filter(~Hive.queens.any()).all()
+    hives = Hive.query.filter_by(user_id=session['user_id']).filter(~Hive.queens.any()).all()
     if queen.hive and queen.hive not in hives:
         hives.append(queen.hive)
 
@@ -443,8 +459,10 @@ def edit_queen(id):
 
 @app.route('/delete-queen/<int:id>', methods=['GET'])
 def delete_queen(id):
-    queen = db.session.get(Queen, id)  # Fetch the queen by ID
-    db.session.delete(queen)  # Delete it from the session
+    queen = db.session.get(Queen, id)
+    if queen.user_id != session['user_id']:
+        abort(403)
+    db.session.delete(queen)
     db.session.commit()  # Commit the changes to the database
     flash(f"Queen: {queen.name} deleted successfully!", "success")
     return redirect(url_for('queens'))  # Redirect back to the queens list
@@ -465,6 +483,7 @@ def change_password():
             flash('Passwords do not match', 'danger')
             return redirect(url_for('change_password'))
         user.set_password(new_password)
+        user.must_change_password = False
         db.session.commit()
         flash('Password updated successfully', 'success')
         return redirect(url_for('settings', open='security'))
@@ -550,8 +569,34 @@ def toggle_registration():
     cfg.value = '1' if enable else '0'
     db.session.commit()
     msg = 'User registration enabled' if enable else 'User registration disabled'
+    if request.headers.get('Accept') == 'application/json':
+        return jsonify(message=msg)
     flash(msg, 'success')
     return redirect(url_for('settings', open='security'))
+
+
+@app.route('/create-user', methods=['POST'])
+def create_user():
+    admin = db.session.get(User, session['user_id'])
+    if admin.role != 'admin':
+        abort(403)
+    full_name = request.form.get('full_name')
+    email = request.form.get('email') or None
+    username = request.form.get('username')
+    password = request.form.get('password')
+    force_change = request.form.get('force_change') == '1'
+    if User.query.filter_by(username=username).first():
+        flash('Username already exists', 'danger')
+        return redirect(url_for('settings', open='users'))
+    if not password_valid(password):
+        flash('Password must be at least 8 characters long and include upper, lower and special characters.', 'danger')
+        return redirect(url_for('settings', open='users'))
+    new_user = User(username=username, full_name=full_name, email=email, must_change_password=force_change)
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    flash('User created successfully', 'success')
+    return redirect(url_for('settings', open='users'))
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
@@ -596,6 +641,9 @@ class Apiary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(200))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    user = db.relationship('User', backref='apiaries')
 
     hives = db.relationship('Hive', backref='apiary', cascade='all, delete-orphan')
 
@@ -606,6 +654,9 @@ class Hive(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     apiary_id = db.Column(db.Integer, db.ForeignKey('apiary.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    user = db.relationship('User', backref='hives')
 
     queens = db.relationship('Queen', backref='hive', cascade='all, delete-orphan')
 
@@ -618,6 +669,9 @@ class Queen(db.Model):
     breeder = db.Column(db.String(100))
     birth_date = db.Column(db.Date)
     hive_id = db.Column(db.Integer, db.ForeignKey('hive.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    user = db.relationship('User', backref='queens')
 
     def __repr__(self):
         return f'<Queen {self.name}>'
@@ -634,6 +688,7 @@ class User(db.Model):
     profile_picture = db.Column(db.String(200))
     two_factor_secret = db.Column(db.String(32))
     password_hash = db.Column(db.String(200), nullable=False)
+    must_change_password = db.Column(db.Boolean, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -643,7 +698,11 @@ class User(db.Model):
 
 @app.context_processor
 def inject_sidebar_apiaries():
-    return {'sidebar_apiaries': Apiary.query.all()}
+    if 'user_id' in session:
+        apiaries = Apiary.query.filter_by(user_id=session['user_id']).all()
+    else:
+        apiaries = []
+    return {'sidebar_apiaries': apiaries}
 
 
 @app.context_processor
