@@ -28,6 +28,10 @@
             <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
           </div>
           <div class="mb-3">
+            <label class="form-label">Role</label>
+            <input type="text" class="form-control" value="{{ user.role }}" readonly>
+          </div>
+          <div class="mb-3">
             <label for="profile_picture" class="form-label">Profile Picture</label>
             <input type="file" class="form-control" id="profile_picture" name="profile_picture">
           </div>
@@ -95,11 +99,13 @@
           <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" id="enable-2fa-btn" data-bs-toggle="modal" data-bs-target="#setup2FAModal">Enable 2FA</a>
         {% endif %}
         <hr class="my-4">
+        {% if current_user.role == 'admin' %}
         <h5>Public Registration</h5>
         <form method="post" action="{{ url_for('toggle_registration') }}" class="form-check form-switch" id="regForm">
           <input class="form-check-input" type="checkbox" id="regSwitch" name="enable" value="1" {% if registration_enabled %}checked{% endif %}>
       <label class="form-check-label" for="regSwitch">Allow anyone to register</label>
         </form>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -135,6 +141,27 @@
           </div>
           <button type="submit" class="btn btn-primary">Create User</button>
         </form>
+        <hr class="my-4">
+        <table class="table table-sm">
+          <thead>
+            <tr><th>User</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+          {% for u in users %}
+            <tr>
+              <td>
+                {% if u.profile_picture %}
+                <img src="/{{ u.profile_picture }}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                {% else %}
+                <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">{{ (u.full_name or u.username)[0] }}</span>
+                {% endif %}
+                {{ u.username }}
+              </td>
+              <td>{{ u.role }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

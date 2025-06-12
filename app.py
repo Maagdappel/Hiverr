@@ -79,6 +79,12 @@ def require_login():
         if request.endpoint and request.endpoint not in allowed_endpoints and 'user_id' not in session:
             return redirect(url_for('login'))
 
+        if 'user_id' in session:
+            user = db.session.get(User, session['user_id'])
+            if user.must_change_password and request.endpoint not in {'change_password', 'static', 'logout'}:
+                flash('Please change your password', 'info')
+                return redirect(url_for('change_password'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -470,6 +476,7 @@ def delete_queen(id):
 @app.route('/change-password', methods=['GET', 'POST'])
 def change_password():
     user = db.session.get(User, session['user_id'])
+    forced = user.must_change_password
     if request.method == 'POST':
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
@@ -486,8 +493,10 @@ def change_password():
         user.must_change_password = False
         db.session.commit()
         flash('Password updated successfully', 'success')
+        if forced:
+            return redirect(url_for('index'))
         return redirect(url_for('settings', open='security'))
-    return render_template('change_password.html', active_page='settings')
+    return render_template('change_password.html', active_page='settings', forced=forced)
 
 
 @app.route('/setup-2fa', methods=['GET', 'POST'])
@@ -601,6 +610,7 @@ def create_user():
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     user = db.session.get(User, session['user_id'])
+    users = User.query.all() if user.role == 'admin' else []
     tz_list = sorted(available_timezones())
     if not user.timezone:
         tzinfo = datetime.now().astimezone().tzinfo
@@ -630,7 +640,7 @@ def settings():
         flash('Settings updated successfully', 'success')
         return redirect(url_for('settings', open=section))
 
-    return render_template('settings.html', user=user, timezones=tz_list, active_page='settings')
+    return render_template('settings.html', user=user, users=users, timezones=tz_list, active_page='settings')
 
 class Config(db.Model):
     key = db.Column(db.String(50), primary_key=True)
